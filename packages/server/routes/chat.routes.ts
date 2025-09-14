@@ -1,6 +1,8 @@
 import express from 'express';
+import mongoose from 'mongoose';
+
 import type { Request, Response } from 'express';
-import { chatController } from './controllers/chat.controller';
+import { chatController } from '../controllers/chat.controller';
 
 const router = express.Router();
 
@@ -13,5 +15,7 @@ router.get('/api/hello', (req, res) => {
 });
 
 router.post('/api/chat', chatController.sendMessage);
+
+router.post('/api/generate-title', chatController.generateTitle);
 
 export default router;

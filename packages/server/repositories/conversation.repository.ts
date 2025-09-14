@@ -1,14 +1,26 @@
-//Implementation detail
-const conversations = new Map<string, string>();
+import { Conversation, type Message } from '../models/conversation';
 
-//export public interface
+export type { Message };
 
 export const conversationRepository = {
-   getLastResponceId(conversationId: string) {
-      return conversations.get(conversationId);
+   async addMessage(conversationId: string, message: Message) {
+      // Add a message, create conversation if it doesn't exist, return updated conversation
+      return Conversation.findOneAndUpdate(
+         { conversationId },
+         { $push: { messages: message } },
+         { upsert: true, new: true }
+      ).exec();
    },
 
-   setLastResponceId(conversationId: string, responseId: string) {
-      return conversations.set(conversationId, responseId);
+   async getConversation(conversationId: string) {
+      return Conversation.findOne({ conversationId }).exec();
+   },
+
+   async setTitle(conversationId: string, title: string) {
+      return Conversation.findOneAndUpdate(
+         { conversationId },
+         { title },
+         { new: true }
+      ).exec();
    },
 };
