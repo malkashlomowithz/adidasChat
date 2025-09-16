@@ -4,6 +4,7 @@ export type Message = {
    sender: 'user' | 'bot';
    text: string;
    timestamp: Date;
+   id: string;
 };
 
 export interface ConversationDocument extends Document {
@@ -17,6 +18,7 @@ const MessageSchema = new Schema<Message>(
       sender: { type: String, enum: ['user', 'bot'], required: true },
       text: { type: String, required: true },
       timestamp: { type: Date, default: Date.now },
+      id: { type: String, required: false },
    },
    { _id: false }
 );

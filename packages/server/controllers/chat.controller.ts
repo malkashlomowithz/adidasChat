@@ -13,11 +13,7 @@ const chatSchema = z.object({
 });
 
 const titleSchema = z.object({
-   prompt: z
-      .string()
-      .trim()
-      .min(1, 'Need some text to generate a title 🙂')
-      .max(200, 'Title prompt too long — keep it short'),
+   conversationId: z.string().uuid(), // must be a valid UUID
 });
 
 // Public interface
@@ -35,7 +31,7 @@ export const chatController = {
 
          res.json({ message: response.message });
       } catch (error) {
-         res.status(500).json({ error: 'failed to generate a respomse' });
+         res.status(500).json({ error: 'failed to generate a response' });
       }
    },
 
@@ -48,7 +44,8 @@ export const chatController = {
 
       try {
          const { conversationId } = req.body;
-         const title = await chatService.generateTitle(conversationId);
+         console.log('Created :', conversationId);
+         const title = await chatService.generateTitleWithId(conversationId);
          res.json({ title });
       } catch (error) {
          console.error(error);

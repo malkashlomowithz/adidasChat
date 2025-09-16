@@ -13,6 +13,7 @@ export const conversationRepository = {
    },
 
    async getConversation(conversationId: string) {
+      console.log('1111', conversationId);
       return Conversation.findOne({ conversationId }).exec();
    },
 

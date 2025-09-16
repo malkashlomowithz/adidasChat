@@ -61,12 +61,7 @@ function App() {
                               setMessages,
                               conversationId,
                               setLoading,
-                              async () => {
-                                 await generateChatTitle(
-                                    conversationId,
-                                    setTitle
-                                 );
-                              }
+                              setTitle
                            );
                      }}
                      className="resize-none overflow-hidden w-70%"
@@ -88,9 +83,7 @@ function App() {
                            setMessages,
                            conversationId,
                            setLoading,
-                           async () => {
-                              await generateChatTitle(conversationId, setTitle);
-                           }
+                           setTitle
                         )
                      }
                      disabled={loading}

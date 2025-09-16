@@ -1,4 +1,6 @@
 export type Message = {
-   text: string;
    sender: 'user' | 'bot';
+   text: string;
+   timestamp: Date;
+   id?: string;
 };

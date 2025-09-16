@@ -18,40 +18,42 @@ export const chatService = {
       prompt: string,
       conversationId: string
    ): Promise<ChatResponse> {
-      // 1. Save the user's message
+      // 1. Save user message
       const userMessage: Message = {
          sender: 'user',
          text: prompt,
          timestamp: new Date(),
+         id: '',
       };
       await conversationRepository.addMessage(conversationId, userMessage);
 
-      // 2. Fetch all previous messages for this conversation
+      // 2. Fetch conversation
       const conversation =
          await conversationRepository.getConversation(conversationId);
-      const messagesForOpenAI =
-         conversation?.messages.map((m) => ({
-            role: m.sender === 'user' ? 'user' : 'assistant',
-            content: m.text,
-         })) || [];
 
-      // Add the latest user message
-      messagesForOpenAI.push({ role: 'user', content: prompt });
+      // 3. Find last responseId
+      const lastBotMessage = conversation?.messages
+         .slice()
+         .reverse()
+         .find((m) => m.sender === 'bot' && m.id);
 
-      // 3. Ask OpenAI using all messages as context
-      const response = await client.chat.completions.create({
+      // 4. Ask OpenAI
+      const response = await client.responses.create({
          model: 'gpt-4o-mini',
-         messages: messagesForOpenAI,
+         input: prompt,
          temperature: 0.2,
+         max_output_tokens: 100,
+         previous_response_id: lastBotMessage?.id,
       });
 
-      const botText = response.choices[0].message?.content ?? '';
+      const botText = response.output_text ?? '';
 
-      // 4. Save bot's response
+      // 5. Save bot message
       const botMessage: Message = {
          sender: 'bot',
          text: botText,
          timestamp: new Date(),
+         id: response.id,
       };
       await conversationRepository.addMessage(conversationId, botMessage);
 
@@ -61,12 +63,13 @@ export const chatService = {
       };
    },
 
-   async generateTitle(conversationId: string): Promise<string> {
+   async generateTitleWithId(conversationId: string): Promise<string> {
       const conversation =
          await conversationRepository.getConversation(conversationId);
-
-      if (!conversation) throw new Error('Conversation not found');
-
+      if (!conversation) {
+         console.error('[generateTitle] Conversation not found in DB');
+         throw new Error('Conversation not found');
+      }
       const joinedMessages = conversation.messages
          .map((m) => `${m.sender}: ${m.text}`)
          .join('\n');

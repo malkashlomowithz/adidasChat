@@ -14,6 +14,7 @@ export async function createNewConversation(
    setLoading(false);
 
    const newId = uuidv4();
+   console.log(newId);
    setConversationId(newId);
 }
 
@@ -24,11 +25,14 @@ export async function handleSend(
    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
    conversationId: string | null,
    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-   generateChatTitle: () => Promise<void>
+   setTitle: React.Dispatch<React.SetStateAction<string>>
 ) {
    if (!input.trim()) return;
 
-   setMessages((prev) => [...prev, { text: input, sender: 'user' }]);
+   setMessages((prev) => [
+      ...prev,
+      { text: input, sender: 'user', id: undefined, timestamp: new Date() },
+   ]);
    setLoading(true);
    setInput('');
 
@@ -47,11 +51,17 @@ export async function handleSend(
       }
 
       const data = await res.json();
-      setMessages((prev) => [...prev, { text: data.message, sender: 'bot' }]);
+      setMessages((prev) => [
+         ...prev,
+         {
+            id: data.id,
+            text: data.message,
+            sender: 'bot',
+            timestamp: new Date(),
+         },
+      ]);
 
-      if (messages.length === 2) {
-         await generateChatTitle();
-      }
+      updateTitle(messages.length, setTitle, conversationId);
    } catch (err) {
       console.error('Request failed:', err);
    } finally {
@@ -66,21 +76,42 @@ export async function generateChatTitle(
    if (!conversationId) return;
 
    try {
+      console.log('id:', conversationId);
       const res = await fetch('/api/generate-title', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ prompt: conversationId }),
+         body: JSON.stringify({ conversationId }),
       });
 
       if (!res.ok) {
          const error = await res.json();
          console.error('Validation or server error:', error);
+         setTitle('No Title');
          return;
       }
 
       const data = await res.json();
-      setTitle(data.title || 'Chat');
+
+      let title = data.title?.trim().replace(/^["']+|["']+$/g, '') || 'Chat';
+
+      setTitle(title);
+
+      setTitle(title);
    } catch (err) {
       console.error('Request failed:', err);
+      setTitle('No Title');
+   }
+}
+
+function updateTitle(
+   messageLenth: any,
+   setTitle: React.Dispatch<React.SetStateAction<string>>,
+   conversationId: string | null
+) {
+   if (messageLenth === 2) {
+      generateChatTitle(conversationId, setTitle);
+   }
+   if (messageLenth === 10) {
+      generateChatTitle(conversationId, setTitle);
    }
 }

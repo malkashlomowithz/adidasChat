@@ -12,8 +12,10 @@ const saveMessagesSchema = z.object({
          sender: z.string(),
          content: z.string(),
          timestamp: z.string().optional(),
+         id: z.string(),
       })
    ),
+   title: z.string(),
 });
 
 const updateConversationTitleSchema = z.object({
@@ -74,7 +76,7 @@ export const conversationController = {
 
          const conversation = await Conversation.create({
             conversationId,
-            title: title ?? 'New Chat',
+            title: title ?? 'New hhhhhhChat',
             messages: [],
          });
 
