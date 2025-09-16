@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2 } from 'lucide-react';
 import type { Message } from '@/types/message';
+import TypingLoader from './TypingLoader';
 
 interface MessagesListProps {
    messages: Message[];
@@ -9,26 +9,29 @@ interface MessagesListProps {
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({ messages, loading }) => {
-   return (
-      <div className="p-4 space-y-2 max-w-md mx-auto">
-         {messages.map((m, i) => (
-            <div
-               key={i}
-               className={`rounded-xl p-2 text-sm max-w-[80%] ${
-                  m.sender === 'user'
-                     ? 'bg-gray-300 text-gray-800 self-end ml-auto'
-                     : 'bg-gray-100 text-gray-800 self-start'
-               }`}
-            >
-               <ReactMarkdown>{m.text}</ReactMarkdown>
-            </div>
-         ))}
+   const endRef = useRef<HTMLDivElement>(null);
 
-         {loading && (
-            <div className="rounded-xl p-2 text-sm bg-gray-200 text-gray-600 flex items-center gap-2 max-w-[80%]">
-               <Loader2 className="animate-spin h-4 w-4" /> Bot is typing...
-            </div>
-         )}
+   useEffect(() => {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+   }, [messages, loading]);
+   return (
+      <div className="flex flex-col flex-1 overflow-y-auto">
+         <div className="flex flex-col space-y-2">
+            {messages.map((m, i) => (
+               <div
+                  key={i}
+                  className={`rounded-xl p-3 text-sm w-[400px] break-words ${
+                     m.sender === 'user'
+                        ? 'bg-gray-300 text-gray-800 self-end ml-auto'
+                        : 'bg-gray-100 text-gray-800 self-start'
+                  }`}
+               >
+                  <ReactMarkdown>{m.text}</ReactMarkdown>
+               </div>
+            ))}
+            {loading && <TypingLoader />}
+            <div ref={endRef} /> {/* This empty div marks the bottom */}
+         </div>
       </div>
    );
 };
