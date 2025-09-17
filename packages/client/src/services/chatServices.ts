@@ -12,7 +12,6 @@ export async function createNewConversation(
    setInput('');
    setTitle('New Chat');
    setLoading(false);
-
    const newId = uuidv4();
    console.log(newId);
    setConversationId(newId);
@@ -114,4 +113,16 @@ function updateTitle(
    if (messageLenth === 10) {
       generateChatTitle(conversationId, setTitle);
    }
+}
+
+export async function loadAllConversations(
+   setConversations: React.Dispatch<
+      React.SetStateAction<{ id: string; title: string }[]>
+   >
+) {
+   const res = await fetch('/api/conversations');
+   if (!res.ok) throw new Error('Failed to load conversations');
+
+   const data: { id: string; title: string }[] = await res.json();
+   setConversations(data);
 }

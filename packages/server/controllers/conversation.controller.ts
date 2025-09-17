@@ -10,7 +10,7 @@ const saveMessagesSchema = z.object({
    messages: z.array(
       z.object({
          sender: z.string(),
-         content: z.string(),
+         text: z.string(),
          timestamp: z.string().optional(),
          id: z.string(),
       })
@@ -20,7 +20,11 @@ const saveMessagesSchema = z.object({
 
 const updateConversationTitleSchema = z.object({
    conversationId: z.string(),
-   title: z.string().min(200, 'Give me a better title'),
+   title: z
+      .string()
+      .trim()
+      .min(1, 'Title cannot be empty')
+      .max(200, 'Title too long'),
 });
 
 const createConversationSchema = z.object({
@@ -47,11 +51,15 @@ export const conversationController = {
       try {
          const { conversationId, messages } = parseResult.data;
 
-         // Update the conversation
          const updatedConvo = await Conversation.findOneAndUpdate(
             { conversationId },
-            { $set: { messages } }, // replace messages array
-            { new: true } // return the updated document
+            {
+               $set: {
+                  messages,
+                  lastUpdate: new Date(),
+               },
+            },
+            { new: true }
          );
 
          if (!updatedConvo) {
@@ -76,8 +84,9 @@ export const conversationController = {
 
          const conversation = await Conversation.create({
             conversationId,
-            title: title ?? 'New hhhhhhChat',
+            title: title ?? 'No Title',
             messages: [],
+            lastUpdate: Date.now,
          });
 
          res.json(conversation);
@@ -89,9 +98,10 @@ export const conversationController = {
 
    async getAllConversations(req: Request, res: Response) {
       try {
-         const conversations = await Conversation.find().select(
-            'conversationId title'
-         );
+         const conversations = await Conversation.find()
+            .select('conversationId title lastUpdate')
+            .sort({ lastUpdate: -1 });
+
          res.json(conversations);
       } catch (err) {
          console.error(err);

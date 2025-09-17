@@ -11,6 +11,7 @@ export interface ConversationDocument extends Document {
    conversationId: string;
    title?: string;
    messages: Message[];
+   lastUpdate: Date;
 }
 
 const MessageSchema = new Schema<Message>(
@@ -27,6 +28,7 @@ const ConversationSchema = new Schema<ConversationDocument>({
    conversationId: { type: String, required: true, unique: true },
    title: { type: String },
    messages: [MessageSchema],
+   lastUpdate: { type: Date, default: Date.now },
 });
 
 export const Conversation = mongoose.model<ConversationDocument>(

@@ -30,7 +30,7 @@ const MessagesList: React.FC<MessagesListProps> = ({ messages, loading }) => {
                </div>
             ))}
             {loading && <TypingLoader />}
-            <div ref={endRef} /> {/* This empty div marks the bottom */}
+            <div ref={endRef} />
          </div>
       </div>
    );

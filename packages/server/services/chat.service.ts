@@ -18,7 +18,6 @@ export const chatService = {
       prompt: string,
       conversationId: string
    ): Promise<ChatResponse> {
-      // 1. Save user message
       const userMessage: Message = {
          sender: 'user',
          text: prompt,
@@ -27,17 +26,14 @@ export const chatService = {
       };
       await conversationRepository.addMessage(conversationId, userMessage);
 
-      // 2. Fetch conversation
       const conversation =
          await conversationRepository.getConversation(conversationId);
 
-      // 3. Find last responseId
       const lastBotMessage = conversation?.messages
          .slice()
          .reverse()
          .find((m) => m.sender === 'bot' && m.id);
 
-      // 4. Ask OpenAI
       const response = await client.responses.create({
          model: 'gpt-4o-mini',
          input: prompt,
@@ -48,7 +44,6 @@ export const chatService = {
 
       const botText = response.output_text ?? '';
 
-      // 5. Save bot message
       const botMessage: Message = {
          sender: 'bot',
          text: botText,
@@ -76,7 +71,7 @@ export const chatService = {
 
       const response = await client.responses.create({
          model: 'gpt-4o-mini',
-         input: `Generate a short, descriptive title (max 5 words) for this conversation:\n${joinedMessages}`,
+         input: `Generate a short, descriptive title (max 3 words) for this conversation:\n${joinedMessages}`,
          temperature: 0.7,
          max_output_tokens: 20,
       });
