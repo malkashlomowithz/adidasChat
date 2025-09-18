@@ -1,4 +1,6 @@
 import OpenAI from 'openai';
+import { franc } from 'franc';
+import langs from 'langs';
 import {
    conversationRepository,
    type Message,
@@ -12,6 +14,39 @@ type ChatResponse = {
    id: string;
    message: string;
 };
+
+const blockedTopics = [
+   'sex',
+   'drugs',
+   'suicide',
+   'terror',
+   'weapons',
+   'violence',
+   'politics',
+];
+
+function containsBlockedTopic(prompt: string) {
+   return blockedTopics.some((topic) => prompt.toLowerCase().includes(topic));
+}
+
+function getBlockedMessage(prompt: string) {
+   const langCode = franc(prompt, { minLength: 3 });
+   const lang = langs.where('3', langCode);
+
+   const messages: Record<string, string> = {
+      hebrew: 'זה נושא חשוב, אבל נדבר על זה כשתגדל/י 😊',
+      english:
+         'This is an important topic, but we’ll talk about it when you’re older 😊',
+      french:
+         'C’est un sujet important, mais nous en parlerons quand tu seras plus grand(e) 😊',
+      spanish:
+         'Es un tema importante, pero hablaremos de eso cuando seas mayor 😊',
+   };
+
+   return (
+      messages[lang?.name.toLowerCase() || 'english'] || messages['english']
+   );
+}
 
 export const chatService = {
    async sendMessage(
@@ -34,11 +69,56 @@ export const chatService = {
          .reverse()
          .find((m) => m.sender === 'bot' && m.id);
 
+      if (containsBlockedTopic(prompt)) {
+         const safeReply =
+            getBlockedMessage(prompt) ??
+            'This is an important topic, but we’ll talk about it when you’re older 😊';
+         const botMessage: Message = {
+            sender: 'bot',
+            text: safeReply,
+            timestamp: new Date(),
+            id: crypto.randomUUID(),
+         };
+         await conversationRepository.addMessage(conversationId, botMessage);
+         return { id: botMessage.id, message: safeReply };
+      }
+
+      const moderation = await client.moderations.create({
+         model: 'omni-moderation-latest',
+         input: prompt,
+      });
+
+      if (moderation.results[0]?.flagged) {
+         const safeReply =
+            getBlockedMessage(prompt) ??
+            'This is an important topic, but we’ll talk about it when you’re older 😊';
+         const botMessage: Message = {
+            sender: 'bot',
+            text: safeReply,
+            timestamp: new Date(),
+            id: crypto.randomUUID(),
+         };
+         await conversationRepository.addMessage(conversationId, botMessage);
+         return { id: botMessage.id, message: safeReply };
+      }
+
       const response = await client.responses.create({
          model: 'gpt-4o-mini',
-         input: prompt,
+         input: [
+            {
+               role: 'system',
+               content: `
+          You are a friendly assistant for children ages 6–12.
+          Always answer in the same language the child used.
+          Keep answers short, simple, and positive.
+          If the child asks about an adult or unsafe topic,
+          respond with: "${getBlockedMessage(prompt)}"
+          `,
+            },
+            { role: 'user', content: prompt },
+         ],
          temperature: 0.2,
-         max_output_tokens: 100,
+         max_output_tokens: 150,
          previous_response_id: lastBotMessage?.id,
       });
 

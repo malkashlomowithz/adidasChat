@@ -7,7 +7,15 @@ router.post('/api/conversations', conversationController.createConversation);
 
 router.get('/api/conversations', conversationController.getAllConversations);
 
-router.get('/api/conversations:id', conversationController.getConversationById);
+router.get(
+   '/api/conversations/:id',
+   conversationController.getConversationById
+);
+
+router.get(
+   '/api/conversations/:id/messages',
+   conversationController.getMessagesByConversationId
+);
 
 router.put(
    '/api/conversations/:id',

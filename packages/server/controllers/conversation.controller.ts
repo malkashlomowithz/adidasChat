@@ -37,7 +37,7 @@ const createConversationSchema = z.object({
 });
 
 const getConversationByIdSchema = z.object({
-   id: z.string().uuid('Invalid conversationId format'),
+   id: z.string(),
 });
 
 export const conversationController = {
@@ -103,6 +103,7 @@ export const conversationController = {
             .sort({ lastUpdate: -1 });
 
          res.json(conversations);
+         console.log(conversations);
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to fetch conversations' });
@@ -159,6 +160,33 @@ export const conversationController = {
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to update conversation' });
+      }
+   },
+
+   getMessagesByConversationId: async (req: Request, res: Response) => {
+      // 1. Validate route params with Zod
+      const parseResult = getConversationByIdSchema.safeParse(req.params);
+      if (!parseResult.success) {
+         return res.status(400).json(parseResult.error.format());
+      }
+
+      try {
+         const { id } = parseResult.data;
+
+         // 2. Find conversation by conversationId (UUID string)
+         const conversation = await Conversation.findOne({
+            conversationId: id,
+         });
+
+         if (!conversation) {
+            return res.status(404).json({ error: 'Conversation not found' });
+         }
+
+         // 3. Return messages
+         res.json(conversation.messages || []);
+      } catch (err) {
+         console.error(err);
+         res.status(500).json({ error: 'Failed to load messages' });
       }
    },
 };

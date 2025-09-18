@@ -6,7 +6,10 @@ export async function createNewConversation(
    setInput: React.Dispatch<React.SetStateAction<string>>,
    setTitle: React.Dispatch<React.SetStateAction<string>>,
    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-   setConversationId: React.Dispatch<React.SetStateAction<string | null>>
+   setConversationId: React.Dispatch<React.SetStateAction<string | null>>,
+   setSelectedCon: React.Dispatch<
+      React.SetStateAction<{ id: string; title: string } | null>
+   >
 ) {
    setMessages([]);
    setInput('');
@@ -15,6 +18,7 @@ export async function createNewConversation(
    const newId = uuidv4();
    console.log(newId);
    setConversationId(newId);
+   setSelectedCon(null);
 }
 
 export async function handleSend(
@@ -90,7 +94,6 @@ export async function generateChatTitle(
       }
 
       const data = await res.json();
-
       let title = data.title?.trim().replace(/^["']+|["']+$/g, '') || 'Chat';
 
       setTitle(title);
@@ -107,6 +110,9 @@ function updateTitle(
    setTitle: React.Dispatch<React.SetStateAction<string>>,
    conversationId: string | null
 ) {
+   if (messageLenth === 0) {
+      generateChatTitle(conversationId, setTitle);
+   }
    if (messageLenth === 2) {
       generateChatTitle(conversationId, setTitle);
    }
@@ -122,7 +128,18 @@ export async function loadAllConversations(
 ) {
    const res = await fetch('/api/conversations');
    if (!res.ok) throw new Error('Failed to load conversations');
+   const data = await res.json();
 
-   const data: { id: string; title: string }[] = await res.json();
-   setConversations(data);
+   const mapped = data.map((con: any) => ({
+      id: con.conversationId,
+      title: con.title?.trim().replace(/^["']+|["']+$/g, '') || 'No Title', // remove extra quotes
+   }));
+
+   setConversations(mapped);
+}
+
+export async function loadMessages(conversationId: string) {
+   const res = await fetch(`/api/conversations/${conversationId}/messages`);
+   if (!res.ok) throw new Error('Failed to load messages');
+   return res.json();
 }
