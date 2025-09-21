@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import MessagesList from '../components/components/MessagesList';
 import ChatInput from '../components/components/ChatInput';
 import icon from '@/assets/freepik_assistant_1758179812429.png';
+import bgImage from '@/assets/bg1.jpg';
+import changeBgIcon from '@/assets/gear+heart.png';
 import {
    createNewConversation,
    handleSend,
@@ -10,6 +12,7 @@ import {
 } from '@/services/chatServices';
 import type { Message } from '@/types/message';
 import Sidebar from '@/components/components/Sidebar';
+import TopBar from '@/components/components/TopBar';
 
 function App() {
    const [messages, setMessages] = useState<Message[]>([]);
@@ -71,40 +74,31 @@ function App() {
    };
 
    return (
-      <div className="flex h-screen">
-         <Sidebar
-            title={title}
-            conversations={conversations}
-            selectedConId={selectedCon?.id || null}
-            setSelectedCon={handleSelectConversation}
-            onNewConversation={handleNewConversation}
+      <div className="flex h-screen relative">
+         <div
+            className="fixed inset-0 bg-cover bg-center opacity-40 -z-10"
+            style={{ backgroundImage: `url(${bgImage})` }}
          />
-
-         <div className="flex-1 flex flex-col">
-            <div className="w-full h-20 bg-gray-100 dark:bg-gray-800 flex items-center px-6 shadow-md">
-               <img src={icon} alt="Ask Me Logo" className="h-24 w-24 mr-4" />
-
-               <div className="flex flex-col">
-                  {/* App Name */}
-                  <span className="text-xl font-bold text-gray-900 dark:text-white">
-                     Ask Me
-                  </span>
-
-                  {/* Conversation Title */}
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                     {selectedCon?.title || 'New Chat'}
-                  </span>
+         <div className="fixed top-0 left-0 h-screen w-72 z-30">
+            <Sidebar
+               title={title}
+               conversations={conversations}
+               selectedConId={selectedCon?.id || null}
+               setSelectedCon={handleSelectConversation}
+               onNewConversation={handleNewConversation}
+            />
+         </div>
+         <div className="ml-72 flex-1 flex flex-col relative">
+            <TopBar title={title} onChangeBackground={() => {}} />
+            <div className="flex-1 flex flex-col pt-20 pb-20 overflow-hidden">
+               <div className="flex-1 w-2/3 mx-auto overflow-y-auto hide-scrollbar p-4">
+                  {messages.length > 0 && (
+                     <MessagesList messages={messages} loading={loading} />
+                  )}
                </div>
             </div>
-
-            {/* Messages List */}
-            <div className="flex-1 w-2/3 mx-auto overflow-y-auto hide-scrollbar mb-4">
-               <MessagesList messages={messages} loading={loading} />
-            </div>
-
-            {/* Chat Input */}
-            <div className="w-1/2 mx-auto px-4 py-2">
-               <div className="flex items-center gap-2">
+            <div className="fixed bottom-0 left-72 right-0 z-20">
+               <div className="w-1/2 mx-auto">
                   <ChatInput
                      ref={textareaRef}
                      input={input}
@@ -117,7 +111,8 @@ function App() {
                            setMessages,
                            conversationId,
                            setLoading,
-                           setTitle
+                           setTitle,
+                           setConversations
                         )
                      }
                      loading={loading}

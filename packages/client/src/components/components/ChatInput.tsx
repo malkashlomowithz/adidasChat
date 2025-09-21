@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
-import sendImage from '@/assets/60b5e27a-dc28-4b0a-838c-042221ded322.jpg';
+import sendImage from '@/assets/send.jpg';
 import leftImage from '@/assets/freepik_assistant_1758179812429.png';
 
 interface ChatInputProps {
@@ -15,7 +15,6 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
    ({ input, setInput, onSend, loading }, ref) => {
       return (
          <div className="w-full pb-8">
-            {/* Chat input container */}
             <div className="flex items-center w-full bg-white rounded-xl border border-gray-300 overflow-hidden">
                <img
                   src={leftImage}

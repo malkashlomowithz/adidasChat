@@ -28,7 +28,10 @@ export async function handleSend(
    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
    conversationId: string | null,
    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-   setTitle: React.Dispatch<React.SetStateAction<string>>
+   setTitle: React.Dispatch<React.SetStateAction<string>>,
+   setConversations: React.Dispatch<
+      React.SetStateAction<{ id: string; title: string }[]>
+   >
 ) {
    if (!input.trim()) return;
 
@@ -64,7 +67,22 @@ export async function handleSend(
          },
       ]);
 
+      // update the title when needed
       updateTitle(messages.length, setTitle, conversationId);
+
+      // 🔑 move this conversation to the top of the list
+      if (conversationId) {
+         setConversations((prev) => {
+            const current = prev.find((c) => c.id === conversationId);
+            if (!current) return prev;
+
+            // הסרה של השיחה מהמקום הנוכחי
+            const filtered = prev.filter((c) => c.id !== conversationId);
+
+            // הכנסה לראש הרשימה
+            return [{ ...current }, ...filtered];
+         });
+      }
    } catch (err) {
       console.error('Request failed:', err);
    } finally {

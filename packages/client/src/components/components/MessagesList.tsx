@@ -26,10 +26,10 @@ const MessagesList: React.FC<MessagesListProps> = ({ messages, loading }) => {
                >
                   <div
                      className={`
-                max-w-[70%] px-4 py-2 text-sm break-words
-                rounded-2xl shadow-sm
-                ${isUser ? 'bg-gray-300 text-gray-800' : 'bg-gray-100 text-gray-800'}
-              `}
+                        max-w-[70%] px-4 py-2 text-sm break-words
+                        rounded-2xl shadow-sm
+                        ${isUser ? 'bg-gray-300 text-gray-800' : 'bg-gray-100 text-gray-800'}
+                     `}
                   >
                      <ReactMarkdown>{m.text}</ReactMarkdown>
                   </div>
