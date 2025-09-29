@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 //import { Button } from '../ui/button';
-import plus from '@/assets/plus ran.png';
+import plus from '@/assets/plus red.jpg';
 
 interface SidebarProps {
    title: string;
@@ -19,7 +19,6 @@ const Sidebar: FC<SidebarProps> = ({
 }) => {
    return (
       <div className="w-72 bg-gray-100 border-r p-4 flex flex-col h-full">
-         {/* Button */}
          <button
             className="flex items-center gap-2 mb-4 px-4 py-2 
                     bg-white text-gray-800 border border-gray-300 
@@ -32,12 +31,10 @@ const Sidebar: FC<SidebarProps> = ({
             Start A New Chat
          </button>
 
-         {/* Title */}
          <div className="w-full p-2 bg-white rounded-md shadow mb-4 text-center font-semibold">
             {title || 'No conversation selected'}
          </div>
 
-         {/* Scrollable Conversations */}
          <div className="flex-1 flex flex-col w-full gap-2 mt-2 overflow-y-auto hide-scrollbar">
             {conversations.map((con) => (
                <div

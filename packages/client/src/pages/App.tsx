@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import MessagesList from '../components/components/MessagesList';
 import ChatInput from '../components/components/ChatInput';
-import icon from '@/assets/freepik_assistant_1758179812429.png';
 import bgImage from '@/assets/bg1.jpg';
-import changeBgIcon from '@/assets/gear+heart.png';
 import {
    createNewConversation,
    handleSend,
@@ -13,8 +11,14 @@ import {
 import type { Message } from '@/types/message';
 import Sidebar from '@/components/components/Sidebar';
 import TopBar from '@/components/components/TopBar';
+import BackgroundSelector from '@/components/components/BackgroundSelector';
 
-function App() {
+interface AppProps {
+   setToken: (token: string | null) => void;
+   userId: string | null;
+}
+
+function App({ setToken, userId }: AppProps) {
    const [messages, setMessages] = useState<Message[]>([]);
    const [input, setInput] = useState('');
    const [conversationId, setConversationId] = useState<string | null>(null);
@@ -27,6 +31,8 @@ function App() {
       id: string;
       title: string;
    } | null>(null);
+   const [background, setBackground] = useState<string | null>(null);
+   const [showBgSelector, setShowBgSelector] = useState(false); // modal toggle
 
    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,6 +47,13 @@ function App() {
       );
       loadAllConversations(setConversations);
    }, []);
+
+   useEffect(() => {
+      if (userId) {
+         const saved = localStorage.getItem(`background_${userId}`);
+         if (saved) setBackground(saved);
+      }
+   }, [userId]);
 
    const handleNewConversation = () => {
       createNewConversation(
@@ -75,10 +88,13 @@ function App() {
 
    return (
       <div className="flex h-screen relative">
+         {/* Background */}
          <div
             className="fixed inset-0 bg-cover bg-center opacity-40 -z-10"
-            style={{ backgroundImage: `url(${bgImage})` }}
+            style={{ backgroundImage: `url(${background || bgImage})` }}
          />
+
+         {/* Sidebar */}
          <div className="fixed top-0 left-0 h-screen w-72 z-30">
             <Sidebar
                title={title}
@@ -88,8 +104,15 @@ function App() {
                onNewConversation={handleNewConversation}
             />
          </div>
+
+         {/* Main Area */}
          <div className="ml-72 flex-1 flex flex-col relative">
-            <TopBar title={title} onChangeBackground={() => {}} />
+            <TopBar
+               title={title}
+               onChangeBackground={() => setShowBgSelector(true)}
+               setToken={setToken}
+            />
+
             <div className="flex-1 flex flex-col pt-20 pb-20 overflow-hidden">
                <div className="flex-1 w-2/3 mx-auto overflow-y-auto hide-scrollbar p-4">
                   {messages.length > 0 && (
@@ -97,8 +120,15 @@ function App() {
                   )}
                </div>
             </div>
-            <div className="fixed bottom-0 left-72 right-0 z-20">
-               <div className="w-1/2 mx-auto">
+
+            <div
+               className={`transition-all duration-300 flex flex-col ${
+                  messages.length === 0
+                     ? 'absolute inset-0 items-center justify-center'
+                     : 'relative mb-10 items-center justify-center'
+               }`}
+            >
+               <div className="w-1/2">
                   <ChatInput
                      ref={textareaRef}
                      input={input}
@@ -120,6 +150,38 @@ function App() {
                </div>
             </div>
          </div>
+
+         {/* Footer */}
+         <div className="fixed bottom-1 right-4 text-xs text-gray-500 z-50">
+            <samp>
+               © Built with love for curious kids everywhere, by Malky
+               Shlomowitz.
+            </samp>
+         </div>
+
+         {/* Background Selector Modal */}
+         {showBgSelector && (
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+               <div className="bg-white/90 rounded-xl p-6 w-2/3 max-w-3xl backdrop-blur-sm">
+                  <h2 className="text-lg font-semibold mb-4">
+                     Choose Background
+                  </h2>
+                  <BackgroundSelector
+                     onSelect={(bg) => {
+                        setBackground(bg);
+                        setShowBgSelector(false);
+                     }}
+                     userId={userId}
+                  />
+                  <button
+                     className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                     onClick={() => setShowBgSelector(false)}
+                  >
+                     Cancel
+                  </button>
+               </div>
+            </div>
+         )}
       </div>
    );
 }

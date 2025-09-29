@@ -1,8 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import 'tailwindcss/preflight';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+
+/* Add your extra imports AFTER the tailwind layers */
 
 @custom-variant dark (&:is(.dark *));
 

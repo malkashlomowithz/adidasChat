@@ -1,6 +1,23 @@
 import React from 'react';
 
+const typingSentences = [
+   '🤖 Thinking of a magical answer...',
+   '✨ The bot is cooking up a reply...',
+   '🧚‍♂️ Little ideas are forming...',
+   '💬 Shh… the bot is whispering...',
+   '🌟 The magic is happening...',
+   '🤗 Preparing a fun reply...',
+   '📝 Just a moment…',
+   '⌛ Thinking…',
+   '💭 Let me see…',
+   '🕵️‍♂️ Searching for an answer…',
+];
+
 const TypingLoader: React.FC = () => {
+   // Pick a random sentence
+   const sentence =
+      typingSentences[Math.floor(Math.random() * typingSentences.length)];
+
    return (
       <div className="rounded-xl p-3 text-sm bg-gray-200 text-gray-600 flex items-center gap-3 w-[400px]">
          <div className="flex items-center gap-1">
@@ -8,7 +25,7 @@ const TypingLoader: React.FC = () => {
             <span className="w-2.5 h-2.5 bg-gray-500 rounded-full animate-bounce delay-150"></span>
             <span className="w-2.5 h-2.5 bg-gray-500 rounded-full animate-bounce delay-300"></span>
          </div>
-         <span>Bot is typing...</span>
+         <span>{sentence}</span>
 
          <style>
             {`
