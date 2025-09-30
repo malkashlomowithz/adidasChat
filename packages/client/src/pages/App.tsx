@@ -168,8 +168,8 @@ function App({ setToken, userId }: AppProps) {
                   </h2>
                   <BackgroundSelector
                      onSelect={(bg) => {
-                        setBackground(bg);
-                        setShowBgSelector(false);
+                        setBackground(bg); // parent state updates
+                        setShowBgSelector(false); // close modal
                      }}
                      userId={userId}
                   />

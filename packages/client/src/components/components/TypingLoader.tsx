@@ -14,7 +14,6 @@ const typingSentences = [
 ];
 
 const TypingLoader: React.FC = () => {
-   // Pick a random sentence
    const sentence =
       typingSentences[Math.floor(Math.random() * typingSentences.length)];
 
