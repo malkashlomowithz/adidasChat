@@ -1,26 +1,24 @@
 import React from 'react';
-import icon from '@/assets/text_bubble.png';
-import changeBgIcon from '@/assets/settings.png';
+import icon from '@/assets/bubble.png';
+import changeBgIcon from '@/assets/settings_pink.png';
 import logoutIcon from '@/assets/logoutIcon.png';
 
 interface TopBarProps {
    title: string;
-   onChangeBackground: () => void;
+   clickChangeBackground: () => void; // matches parent
    setToken: (token: string | null) => void;
    setUserId?: (userId: string | null) => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
    title,
-   onChangeBackground,
+   clickChangeBackground,
    setToken,
    setUserId,
 }) => {
    const handleLogout = () => {
       const userId = localStorage.getItem('userId');
-      if (userId) {
-         localStorage.removeItem(`background_${userId}`);
-      }
+      if (userId) localStorage.removeItem(`background_${userId}`);
 
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
@@ -31,7 +29,7 @@ const TopBar: React.FC<TopBarProps> = ({
    return (
       <div className="fixed top-0 left-72 right-0 h-20 bg-gray-100 dark:bg-gray-800 flex items-center justify-between px-6 shadow-md z-20">
          <div className="flex items-center">
-            <img src={icon} alt="Ask Me Logo" className="h-10 w-15 mr-4" />
+            <img src={icon} alt="Ask Me Logo" className="h-16 w-16 mr-4" />
             <div className="flex flex-col">
                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   Ask Me
@@ -43,9 +41,10 @@ const TopBar: React.FC<TopBarProps> = ({
          </div>
 
          <div className="flex items-center gap-4">
+            {/* This button triggers the parent modal */}
             <button
                className="flex items-center gap-2 bg-white/80 dark:bg-gray-700/80 px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all"
-               onClick={onChangeBackground}
+               onClick={clickChangeBackground} // must match parent prop
             >
                <img
                   src={changeBgIcon}

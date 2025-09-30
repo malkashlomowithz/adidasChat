@@ -109,7 +109,7 @@ function App({ setToken, userId }: AppProps) {
          <div className="ml-72 flex-1 flex flex-col relative">
             <TopBar
                title={title}
-               onChangeBackground={() => setShowBgSelector(true)}
+               clickChangeBackground={() => setShowBgSelector(true)}
                setToken={setToken}
             />
 
@@ -161,20 +161,20 @@ function App({ setToken, userId }: AppProps) {
 
          {/* Background Selector Modal */}
          {showBgSelector && (
-            <div className="fixed inset-0 flex items-center justify-center z-50">
-               <div className="bg-white/90 rounded-xl p-6 w-2/3 max-w-3xl backdrop-blur-sm">
-                  <h2 className="text-lg font-semibold mb-4">
+            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
+               <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl p-6 w-2/3 max-w-3xl backdrop-blur-sm shadow-lg">
+                  <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
                      Choose Background
                   </h2>
                   <BackgroundSelector
                      onSelect={(bg) => {
-                        setBackground(bg); // parent state updates
-                        setShowBgSelector(false); // close modal
+                        setBackground(bg);
+                        setShowBgSelector(false);
                      }}
-                     userId={userId}
+                     userId={userId || null}
                   />
                   <button
-                     className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                     className="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
                      onClick={() => setShowBgSelector(false)}
                   >
                      Cancel

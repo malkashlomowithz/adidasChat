@@ -6,11 +6,13 @@ import { User } from '../models/auth';
 const registerSchema = z.object({
    name: z.string().min(1, 'Name is required'),
    password: z.string().min(1, 'Password is required'),
+   gender: z.enum(['boy', 'girl']).optional(),
 });
 
 const loginSchema = z.object({
    name: z.string().min(2, 'Name is required'),
    password: z.string().min(6, 'Password is required'),
+   gender: z.enum(['boy', 'girl']).or(z.literal('')).optional(),
 });
 
 export const authController = {
@@ -21,14 +23,14 @@ export const authController = {
       }
 
       try {
-         const { name, password } = parseResult.data;
+         const { name, password, gender } = parseResult.data;
 
          const existingUser = await User.findOne({ name });
          if (existingUser) {
             return res.status(400).json({ error: 'Name already taken' });
          }
 
-         const user = await User.create({ name, password });
+         const user = await User.create({ name, password, gender });
 
          const token = jwt.sign(
             { userId: user._id, name: user.name },
@@ -69,10 +71,14 @@ export const authController = {
          const token = jwt.sign(
             { userId: user._id, name: user.name },
             process.env.JWT_SECRET || 'secret',
-            { expiresIn: '1Yr' }
+            { expiresIn: '1y' }
          );
 
-         res.json({ token, userId: user._id });
+         res.json({
+            token,
+            userId: user._id,
+            gender: user.gender,
+         });
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to login' });

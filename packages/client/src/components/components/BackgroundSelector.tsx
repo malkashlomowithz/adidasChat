@@ -54,19 +54,18 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
 }) => {
    const [selected, setSelected] = useState<string | null>(null);
 
-   // Load saved background for this user on mount
-   useEffect(() => {
-      if (userId) {
-         const saved = localStorage.getItem(`background_${userId}`);
-         if (saved) {
-            setSelected(saved);
-            onSelect(saved); // update parent state
-         } else {
-            setSelected(bg1); // default background
-            onSelect(bg1);
-         }
-      }
-   }, [userId, onSelect]);
+   // useEffect(() => {
+   //    if (userId) {
+   //       const saved = localStorage.getItem(`background_${userId}`);
+   //       if (saved) {
+   //          setSelected(saved);
+   //          onSelect(saved); // update parent state
+   //       } else {
+   //          setSelected(bg1); // default background
+   //          onSelect(bg1);
+   //       }
+   //    }
+   // }, [userId, onSelect]);
 
    const handleSelect = (bg: string) => {
       setSelected(bg);

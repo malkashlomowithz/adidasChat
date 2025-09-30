@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import bgImage from '@/assets/bg1.jpg';
 import { useNavigate } from 'react-router-dom';
-import icon from '@/assets/text_bubble.png';
+import icon from '@/assets/bubble.png';
 
 interface AuthPageProps {
    setToken?: (token: string | null) => void;
@@ -15,11 +15,13 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
    const [loading, setLoading] = useState(false);
    const [name, setName] = useState('');
    const [password, setPassword] = useState('');
-   const [gender, setGender] = useState<'boy' | 'girl' | ''>(''); // ✅ new state
+   const [gender, setGender] = useState<'boy' | 'girl' | ''>('');
    const [error, setError] = useState<string | null>(null);
    const [success, setSuccess] = useState<string | null>(null);
 
    const isPasswordValid = /^\d{6}$/.test(password);
+
+   const colorRGB = 'rgb(110, 85, 200)';
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -72,26 +74,26 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
 
    return (
       <div className="relative flex items-center justify-center min-h-screen">
-         {/* 🌄 Background */}
          <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat -z-10"
             style={{ backgroundImage: `url(${bgImage})` }}
          />
 
-         {/* Form Card */}
-         <div className="max-w-md w-full mx-4 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-4 border-yellow-200">
-            {/* 🌟 Introduction Message */}
+         <div
+            className="max-w-md w-full mx-4 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-4"
+            style={{ border: `4px solid ${colorRGB}` }}
+         >
             <div className="text-center mb-6">
                <div className="flex justify-center items-center mb-2">
-                  <h1 className="text-4xl font-extrabold text-indigo-600">
+                  <h1
+                     className="text-3xl font-extrabold mr-2"
+                     style={{ color: colorRGB }}
+                  >
                      Welcome to Ask Me!
                   </h1>
-                  <img
-                     src={icon}
-                     alt="Ask Me Logo"
-                     className="h-10 w-10 mr-2"
-                  />
+                  <img src={icon} alt="Ask Me Logo" className="h-10 w-10" />
                </div>
+
                <p className="text-sm text-gray-600 leading-relaxed max-w-md mx-auto">
                   <strong>Learn, explore, and ask anything!</strong>
                   <br />
@@ -101,8 +103,10 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
                </p>
             </div>
 
-            {/* Title */}
-            <h2 className="text-3xl font-extrabold text-center mb-4 text-blue-700">
+            <h2
+               className="text-3xl font-extrabold text-center mb-4 "
+               style={{ color: colorRGB }}
+            >
                {mode === 'login' ? 'Welcome Back! 🧸' : 'Join the Fun 🎉'}
             </h2>
             <p className="text-center text-gray-600 mb-6">
@@ -112,7 +116,6 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-               {/* Username */}
                <div>
                   <label className="block text-sm font-medium text-gray-700">
                      Your Name 🌟
@@ -127,7 +130,6 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
                   />
                </div>
 
-               {/* Password */}
                <div>
                   <label className="block text-sm font-medium text-gray-700">
                      Your Secret Code 🔐
@@ -156,7 +158,6 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
                   )}
                </div>
 
-               {/* Gender Selection */}
                {mode === 'register' && (
                   <div>
                      <p className="block text-sm font-medium text-gray-700 mb-2">
@@ -212,25 +213,31 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
                   </div>
                )}
 
-               {/* Error Message */}
                {error && (
                   <p className="text-sm text-red-600 text-center font-medium">
                      {error}
                   </p>
                )}
 
-               {/* Success Message */}
                {success && (
                   <p className="text-sm text-green-600 text-center font-medium">
                      {success}
                   </p>
                )}
 
-               {/* Submit */}
                <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-full px-6 py-3 text-lg font-bold bg-yellow-400 text-white shadow-lg hover:bg-yellow-500 active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full rounded-full px-6 py-3 text-lg font-bold text-white shadow-lg active:scale-95 transition-all disabled:opacity-50"
+                  style={{ backgroundColor: 'rgb(174, 155, 237)' }}
+                  onMouseEnter={(e) =>
+                     (e.currentTarget.style.backgroundColor =
+                        'rgb(110, 85, 200)')
+                  }
+                  onMouseLeave={(e) =>
+                     (e.currentTarget.style.backgroundColor =
+                        'rgb(174, 155, 237)')
+                  }
                >
                   {loading
                      ? 'Working...'
@@ -240,12 +247,12 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
                </button>
             </form>
 
-            {/* Toggle Mode */}
             <div className="pt-4 text-center text-sm">
                {mode === 'login' ? (
                   <button
                      onClick={() => setMode('register')}
-                     className="text-blue-600 hover:underline font-medium"
+                     className=" hover:underline font-medium"
+                     style={{ color: colorRGB }}
                   >
                      Don’t have an account? Join now 💫
                   </button>

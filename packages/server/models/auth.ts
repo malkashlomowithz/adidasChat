@@ -2,11 +2,13 @@ import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcrypt';
 
 export type UserRole = 'user' | 'admin';
+export type Gender = 'boy' | 'girl';
 
 export interface UserDocument extends Document {
    name: string;
    password: string;
    role: UserRole;
+   gender: Gender;
    createdAt: Date;
    updatedAt: Date;
    comparePassword(candidatePassword: string): Promise<boolean>;
@@ -17,6 +19,7 @@ const UserSchema = new Schema<UserDocument>(
       name: { type: String, required: true },
       password: { type: String, required: true },
       role: { type: String, enum: ['user', 'admin'], default: 'user' },
+      gender: { type: String, enum: ['boy', 'girl'], default: 'boy' },
    },
    { timestamps: true }
 );
