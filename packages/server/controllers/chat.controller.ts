@@ -26,8 +26,13 @@ export const chatController = {
       }
 
       try {
-         const { prompt, conversationId } = req.body;
-         const response = await chatService.sendMessage(prompt, conversationId);
+         console.log('log----', parseResult);
+         const { prompt, conversationId, userId } = req.body;
+         const response = await chatService.sendMessage(
+            prompt,
+            conversationId,
+            userId
+         );
 
          res.json({ message: response.message });
       } catch (error) {

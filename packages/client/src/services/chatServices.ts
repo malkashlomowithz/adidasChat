@@ -27,6 +27,7 @@ export async function handleSend(
    messages: Message[],
    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
    conversationId: string | null,
+   userId: string | null,
    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
    setTitle: React.Dispatch<React.SetStateAction<string>>,
    setConversations: React.Dispatch<
@@ -46,7 +47,7 @@ export async function handleSend(
       const res = await fetch('/api/chat', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ prompt: input, conversationId }),
+         body: JSON.stringify({ prompt: input, conversationId, userId }),
       });
 
       if (!res.ok) {
@@ -70,16 +71,13 @@ export async function handleSend(
       // update the title when needed
       updateTitle(messages.length, setTitle, conversationId);
 
-      // 🔑 move this conversation to the top of the list
       if (conversationId) {
          setConversations((prev) => {
             const current = prev.find((c) => c.id === conversationId);
             if (!current) return prev;
 
-            // הסרה של השיחה מהמקום הנוכחי
             const filtered = prev.filter((c) => c.id !== conversationId);
 
-            // הכנסה לראש הרשימה
             return [{ ...current }, ...filtered];
          });
       }
@@ -142,18 +140,35 @@ function updateTitle(
 export async function loadAllConversations(
    setConversations: React.Dispatch<
       React.SetStateAction<{ id: string; title: string }[]>
-   >
+   >,
+   userId: string | null
 ) {
-   const res = await fetch('/api/conversations');
-   if (!res.ok) throw new Error('Failed to load conversations');
-   const data = await res.json();
+   if (!userId) {
+      console.warn('No userId provided — skipping conversation load.');
+      setConversations([]);
+      return;
+   }
 
-   const mapped = data.map((con: any) => ({
-      id: con.conversationId,
-      title: con.title?.trim().replace(/^["']+|["']+$/g, '') || 'No Title', // remove extra quotes
-   }));
+   try {
+      const res = await fetch(
+         `/api/conversations?userId=${encodeURIComponent(userId)}`
+      );
+      if (!res.ok)
+         throw new Error(`Failed to load conversations: ${res.statusText}`);
 
-   setConversations(mapped);
+      const data: Array<{ conversationId: string; title?: string }> =
+         await res.json();
+
+      const mapped = data.map((con) => ({
+         id: con.conversationId,
+         title: con.title?.trim().replace(/^["']+|["']+$/g, '') || 'No Title',
+      }));
+
+      setConversations(mapped);
+   } catch (error) {
+      console.error('Error loading conversations:', error);
+      setConversations([]); // clear or keep previous depending on your preference
+   }
 }
 
 export async function loadMessages(conversationId: string) {

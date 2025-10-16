@@ -78,10 +78,47 @@ export const authController = {
             token,
             userId: user._id,
             gender: user.gender,
+            background: user.background || null,
          });
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to login' });
+      }
+   },
+
+   async updateBackground(req: Request, res: Response) {
+      try {
+         const { userId } = req.body; // or from req.user if using auth middleware
+         const { background } = req.body;
+
+         if (!userId || !background) {
+            return res
+               .status(400)
+               .json({ error: 'userId and background are required' });
+         }
+
+         const user = await User.findByIdAndUpdate(
+            userId,
+            { background },
+            { new: true } // return updated document
+         );
+
+         if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+         }
+
+         res.json({
+            message: 'Background updated successfully',
+            user: {
+               _id: user._id,
+               name: user.name,
+               gender: user.gender,
+               background: user.background,
+            },
+         });
+      } catch (err) {
+         console.error(err);
+         res.status(500).json({ error: 'Failed to update background' });
       }
    },
 };

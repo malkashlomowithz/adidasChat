@@ -11,6 +11,7 @@ export interface UserDocument extends Document {
    gender: Gender;
    createdAt: Date;
    updatedAt: Date;
+   background?: string;
    comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -20,6 +21,7 @@ const UserSchema = new Schema<UserDocument>(
       password: { type: String, required: true },
       role: { type: String, enum: ['user', 'admin'], default: 'user' },
       gender: { type: String, enum: ['boy', 'girl'], default: 'boy' },
+      background: { type: String },
    },
    { timestamps: true }
 );

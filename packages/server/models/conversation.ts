@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { string } from 'zod';
 
 export type Message = {
    sender: 'user' | 'bot';
@@ -12,6 +13,7 @@ export interface ConversationDocument extends Document {
    title?: string;
    messages: Message[];
    lastUpdate: Date;
+   userId: string;
 }
 
 const MessageSchema = new Schema<Message>(
@@ -29,6 +31,7 @@ const ConversationSchema = new Schema<ConversationDocument>({
    title: { type: String },
    messages: [MessageSchema],
    lastUpdate: { type: Date, default: Date.now },
+   userId: { type: String, required: true, unique: true },
 });
 
 export const Conversation = mongoose.model<ConversationDocument>(

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import bg1 from '@/assets/bg1.jpg';
 import bg2 from '@/assets/bg2.jpg';
 import bg3 from '@/assets/bg3.jpg';
@@ -23,6 +24,7 @@ import bg20 from '@/assets/bg20.jpg';
 interface BackgroundSelectorProps {
    onSelect: (bg: string) => void;
    userId: string | null;
+   token: string | null;
 }
 
 const backgrounds = [
@@ -51,27 +53,62 @@ const backgrounds = [
 const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
    onSelect,
    userId,
+   token,
 }) => {
    const [selected, setSelected] = useState<string | null>(null);
 
-   // useEffect(() => {
-   //    if (userId) {
-   //       const saved = localStorage.getItem(`background_${userId}`);
-   //       if (saved) {
-   //          setSelected(saved);
-   //          onSelect(saved); // update parent state
-   //       } else {
-   //          setSelected(bg1); // default background
-   //          onSelect(bg1);
-   //       }
-   //    }
-   // }, [userId, onSelect]);
+   // Load saved background from server or localStorage
+   useEffect(() => {
+      const fetchBackground = async () => {
+         if (!userId) return;
 
-   const handleSelect = (bg: string) => {
+         // First try localStorage
+         const saved = localStorage.getItem(`background_${userId}`);
+         if (saved) {
+            setSelected(saved);
+            onSelect(saved);
+         }
+
+         // Fetch from server
+         if (token) {
+            try {
+               const res = await axios.get(`/api/users/${userId}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+               });
+               if (res.data.background) {
+                  setSelected(res.data.background);
+                  onSelect(res.data.background);
+                  localStorage.setItem(
+                     `background_${userId}`,
+                     res.data.background
+                  );
+               }
+            } catch (err) {
+               console.error('Failed to fetch user background', err);
+            }
+         }
+      };
+
+      fetchBackground();
+   }, [userId, token, onSelect]);
+
+   const handleSelect = async (bg: string) => {
       setSelected(bg);
       onSelect(bg);
       if (userId) {
          localStorage.setItem(`background_${userId}`, bg);
+
+         if (token) {
+            try {
+               await axios.put(
+                  `/api/users/${userId}/background`,
+                  { background: bg },
+                  { headers: { Authorization: `Bearer ${token}` } }
+               );
+            } catch (err) {
+               console.error('Failed to update background', err);
+            }
+         }
       }
    };
 

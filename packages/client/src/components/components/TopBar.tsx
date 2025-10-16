@@ -32,7 +32,7 @@ const TopBar: React.FC<TopBarProps> = ({
             <img src={icon} alt="Ask Me Logo" className="h-16 w-16 mr-4" />
             <div className="flex flex-col">
                <span className="text-xl font-bold text-gray-900 dark:text-white">
-                  Ask Me
+                  Ask Me!
                </span>
                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {title || 'New Chat'}

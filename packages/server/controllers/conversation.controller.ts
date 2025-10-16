@@ -42,7 +42,7 @@ const getConversationByIdSchema = z.object({
 
 export const conversationController = {
    async saveMessages(req: Request, res: Response) {
-      // Validate body
+      console.log('conversation----!!!!!!!!---');
       const parseResult = saveMessagesSchema.safeParse(req.body);
       if (!parseResult.success) {
          return res.status(400).json(parseResult.error.format());
@@ -72,38 +72,42 @@ export const conversationController = {
          res.status(500).json({ error: 'Failed to save messages' });
       }
    },
-   async createConversation(req: Request, res: Response) {
-      const parseResult = createConversationSchema.safeParse(req.body);
-      if (!parseResult.success) {
-         return res.status(400).json(parseResult.error.format());
-      }
+   //    async createConversation(req: Request, res: Response) {
+   //       const parseResult = createConversationSchema.safeParse(req.body);
+   //       if (!parseResult.success) {
+   //          return res.status(400).json(parseResult.error.format());
+   //       }
 
-      try {
-         const conversationId = uuidv4();
-         const { title } = parseResult.data;
-
-         const conversation = await Conversation.create({
-            conversationId,
-            title: title ?? 'No Title',
-            messages: [],
-            lastUpdate: Date.now,
-         });
-
-         res.json(conversation);
-      } catch (err) {
-         console.error(err);
-         res.status(500).json({ error: 'Failed to create conversation' });
-      }
-   },
+   //       try {
+   //          const conversationId = uuidv4();
+   //          const { title } = parseResult.data;
+   // console.log('conversation-------')
+   //          const conversation = await Conversation.create({
+   //             conversationId,
+   //             title: title ?? 'No Title',
+   //             messages: [],
+   //             lastUpdate: Date.now,
+   //          });
+   //         console.log('conversation-------', conversation)
+   //          res.json(conversation);
+   //       } catch (err) {
+   //          console.error(err);
+   //          res.status(500).json({ error: 'Failed to create conversation' });
+   //       }
+   //    },
 
    async getAllConversations(req: Request, res: Response) {
       try {
-         const conversations = await Conversation.find()
-            .select('conversationId title lastUpdate')
+         const { userId } = req.query; // ✅ read from query string
+
+         const filter: any = {};
+         if (userId) filter.userId = userId;
+
+         const conversations = await Conversation.find(filter)
+            .select('conversationId title lastUpdate userId')
             .sort({ lastUpdate: -1 });
 
          res.json(conversations);
-         console.log(conversations);
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to fetch conversations' });
@@ -146,17 +150,15 @@ export const conversationController = {
 
       try {
          // Find by conversationId and update
+
          const updatedConvo = await Conversation.findOneAndUpdate(
             { conversationId }, // find by conversationId
             { $set: { title } }, // update the title
             { new: true } // return updated document
          );
-
          if (!updatedConvo) {
             return res.status(404).json({ error: 'Conversation not found' });
          }
-
-         res.json(updatedConvo);
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to update conversation' });
@@ -183,6 +185,7 @@ export const conversationController = {
          }
 
          // 3. Return messages
+         console.log('conversation------------------');
          res.json(conversation.messages || []);
       } catch (err) {
          console.error(err);

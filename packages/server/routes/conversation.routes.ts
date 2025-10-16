@@ -3,9 +3,9 @@ import { conversationController } from '../controllers/conversation.controller';
 
 const router = Router();
 
-router.post('/api/conversations', conversationController.createConversation);
+//router.post('/api/conversations', conversationController.createConversation);
 
-router.get('/api/conversations', conversationController.getAllConversations);
+router.get('/api/conversations/', conversationController.getAllConversations);
 
 router.get(
    '/api/conversations/:id',

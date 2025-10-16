@@ -45,7 +45,7 @@ function App({ setToken, userId }: AppProps) {
          setConversationId,
          setSelectedCon
       );
-      loadAllConversations(setConversations);
+      loadAllConversations(setConversations, userId);
    }, []);
 
    useEffect(() => {
@@ -64,7 +64,7 @@ function App({ setToken, userId }: AppProps) {
          setConversationId,
          setSelectedCon
       );
-      loadAllConversations(setConversations);
+      loadAllConversations(setConversations, userId);
    };
 
    const handleSelectConversation = async (con: {
@@ -74,7 +74,7 @@ function App({ setToken, userId }: AppProps) {
       setSelectedCon(con);
       setTitle(con.title);
       setLoading(true);
-      loadAllConversations(setConversations);
+      loadAllConversations(setConversations, userId);
       try {
          const data = await loadMessages(con.id);
          setMessages(data);
@@ -140,6 +140,7 @@ function App({ setToken, userId }: AppProps) {
                            messages,
                            setMessages,
                            conversationId,
+                           userId,
                            setLoading,
                            setTitle,
                            setConversations
@@ -172,6 +173,7 @@ function App({ setToken, userId }: AppProps) {
                         setShowBgSelector(false);
                      }}
                      userId={userId || null}
+                     token={null}
                   />
                   <button
                      className="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"

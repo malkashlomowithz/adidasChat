@@ -8,4 +8,6 @@ router.post('/api/register', authController.register);
 
 router.post('/api/login', authController.login);
 
+router.post('/api/updateBackground', authController.updateBackground);
+
 export default router;

@@ -5,7 +5,7 @@ import MainApp from './App';
 
 export default function AppRouter() {
    const [token, setToken] = useState(localStorage.getItem('token'));
-   const [userId, setUserId] = useState(localStorage.getItem('userId'));
+   const [, setUserId] = useState(localStorage.getItem('userId'));
 
    useEffect(() => {
       const handleStorageChange = () => {

@@ -15,6 +15,7 @@ type ChatResponse = {
    message: string;
 };
 
+// רשימת נושאים חסומים
 const blockedTopics = [
    'sex',
    'drugs',
@@ -25,10 +26,12 @@ const blockedTopics = [
    'politics',
 ];
 
+// בדיקה אם ההודעה מכילה נושא חסום
 function containsBlockedTopic(prompt: string) {
    return blockedTopics.some((topic) => prompt.toLowerCase().includes(topic));
 }
 
+// מחזיר הודעה חסומה לפי שפה
 function getBlockedMessage(prompt: string) {
    const langCode = franc(prompt, { minLength: 3 });
    const lang = langs.where('3', langCode);
@@ -48,72 +51,84 @@ function getBlockedMessage(prompt: string) {
    );
 }
 
+// טיפול בהודעה חסומה ושמירתה במסד
+async function handleBlockedMessage(
+   prompt: string,
+   conversationId: string,
+   userId: string
+): Promise<Message> {
+   const safeReply = getBlockedMessage(prompt);
+   const botMessage: Message = {
+      sender: 'bot',
+      text: safeReply || '',
+      timestamp: new Date(),
+      id: crypto.randomUUID(),
+   };
+   await conversationRepository.addMessage(conversationId, botMessage, userId);
+   return botMessage;
+}
+
 export const chatService = {
    async sendMessage(
       prompt: string,
-      conversationId: string
+      conversationId: string,
+      userId: string
    ): Promise<ChatResponse> {
+      // יוצרים הודעת משתמש
       const userMessage: Message = {
          sender: 'user',
          text: prompt,
          timestamp: new Date(),
-         id: '',
+         id: crypto.randomUUID(),
       };
-      await conversationRepository.addMessage(conversationId, userMessage);
+      await conversationRepository.addMessage(
+         conversationId,
+         userMessage,
+         userId
+      );
 
+      // שולפים את השיחה
       const conversation =
          await conversationRepository.getConversation(conversationId);
 
+      // מוצאים את ההודעה האחרונה של הבוט שאינה חסומה
       const lastBotMessage = conversation?.messages
          .slice()
          .reverse()
-         .find((m) => m.sender === 'bot' && m.id);
+         .find(
+            (m) => m.sender === 'bot' && m.id && !containsBlockedTopic(m.text)
+         );
 
-      if (containsBlockedTopic(prompt)) {
-         const safeReply =
-            getBlockedMessage(prompt) ??
-            'This is an important topic, but we’ll talk about it when you’re older 😊';
-         const botMessage: Message = {
-            sender: 'bot',
-            text: safeReply,
-            timestamp: new Date(),
-            id: crypto.randomUUID(),
-         };
-         await conversationRepository.addMessage(conversationId, botMessage);
-         return { id: botMessage.id, message: safeReply };
-      }
-
+      // בדיקת נושא חסום מול רשימת הנושאים
+      let safeReply: string | null = null;
       const moderation = await client.moderations.create({
          model: 'omni-moderation-latest',
          input: prompt,
       });
 
-      if (moderation.results[0]?.flagged) {
-         const safeReply =
-            getBlockedMessage(prompt) ??
-            'This is an important topic, but we’ll talk about it when you’re older 😊';
-         const botMessage: Message = {
-            sender: 'bot',
-            text: safeReply,
-            timestamp: new Date(),
-            id: crypto.randomUUID(),
-         };
-         await conversationRepository.addMessage(conversationId, botMessage);
-         return { id: botMessage.id, message: safeReply };
+      if (containsBlockedTopic(prompt) || moderation.results[0]?.flagged) {
+         const blockedMsg = await handleBlockedMessage(
+            prompt,
+            conversationId,
+            userId
+         );
+         safeReply = blockedMsg.text;
+         // **אל תחזירי return כאן** - השיחה ממשיכה
       }
 
+      // יצירת תגובת הבוט הרגילה
       const response = await client.responses.create({
          model: 'gpt-4o-mini',
          input: [
             {
                role: 'system',
                content: `
-          You are a friendly assistant for children ages 6–12.
-          Always answer in the same language the child used.
-          Keep answers short, simple, and positive.
-          If the child asks about an adult or unsafe topic,
-          respond with: "${getBlockedMessage(prompt)}"
-          `,
+                  You are a friendly assistant for children ages 6–12.
+                  Always answer in the same language the child used.
+                  Keep answers short, simple, and positive.
+                  If the child asks about an adult or unsafe topic,
+                  respond with: "${getBlockedMessage(prompt)}"
+               `,
             },
             { role: 'user', content: prompt },
          ],
@@ -122,7 +137,8 @@ export const chatService = {
          previous_response_id: lastBotMessage?.id,
       });
 
-      const botText = response.output_text ?? '';
+      const botText =
+         response.output_text ?? safeReply ?? 'Oops, something went wrong';
 
       const botMessage: Message = {
          sender: 'bot',
@@ -130,12 +146,13 @@ export const chatService = {
          timestamp: new Date(),
          id: response.id,
       };
-      await conversationRepository.addMessage(conversationId, botMessage);
+      await conversationRepository.addMessage(
+         conversationId,
+         botMessage,
+         userId
+      );
 
-      return {
-         id: response.id,
-         message: botText,
-      };
+      return { id: botMessage.id, message: botText };
    },
 
    async generateTitleWithId(conversationId: string): Promise<string> {
@@ -145,6 +162,7 @@ export const chatService = {
          console.error('[generateTitle] Conversation not found in DB');
          throw new Error('Conversation not found');
       }
+
       const joinedMessages = conversation.messages
          .map((m) => `${m.sender}: ${m.text}`)
          .join('\n');

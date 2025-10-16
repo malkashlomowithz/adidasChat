@@ -6,6 +6,7 @@ import icon from '@/assets/bubble.png';
 interface AuthPageProps {
    setToken?: (token: string | null) => void;
    setUserId?: (userId: string | null) => void;
+   setBackgroundFrom;
 }
 
 export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
@@ -107,11 +108,11 @@ export default function AuthPage({ setToken, setUserId }: AuthPageProps) {
                className="text-3xl font-extrabold text-center mb-4 "
                style={{ color: colorRGB }}
             >
-               {mode === 'login' ? 'Welcome Back! 🧸' : 'Join the Fun 🎉'}
+               {mode === 'login' ? 'Welcome Back!' : 'Join the Fun 🎉'}
             </h2>
             <p className="text-center text-gray-600 mb-6">
                {mode === 'login'
-                  ? 'Enter your secret code to start playing!'
+                  ? 'Enter your secret code to start!'
                   : 'Create your magical account ✨'}
             </p>
 
