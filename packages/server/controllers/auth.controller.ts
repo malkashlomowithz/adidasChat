@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/auth';
+import { User, type Gender } from '../models/auth';
 
 const registerSchema = z.object({
    name: z.string().min(1, 'Name is required'),
@@ -14,6 +14,80 @@ const loginSchema = z.object({
    password: z.string().min(6, 'Password is required'),
    gender: z.enum(['boy', 'girl']).or(z.literal('')).optional(),
 });
+
+async function addUserToMonday(userData: {
+   name: string;
+   role: string;
+   gender: Gender;
+   createdAt: Date;
+   updatedAt: Date;
+}) {
+   const mondayApiToken = process.env.MONDAY_API_TOKEN;
+   const boardId = process.env.MONDAY_BOARD_ID;
+
+   if (!mondayApiToken || !boardId) {
+      console.error('Monday.com credentials not configured');
+      return;
+   }
+
+   const query = `
+      mutation ($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
+         create_item (
+            board_id: $boardId,
+            item_name: $itemName,
+            column_values: $columnValues
+         ) {
+            id
+         }
+      }
+   `;
+
+   // Format dates as YYYY-MM-DD for Monday.com
+   const formatDate = (date: Date) => {
+      return date.toISOString().split('T')[0];
+   };
+
+   // Prepare column values - using lowercase labels to match Monday.com
+   const columnValues = {
+      color_mkx0342a: { label: userData.role }, // "admin" or "user" (lowercase)
+      color_mkx0aq52: { label: userData.gender }, // "boy" or "girl" (lowercase)
+      date_mkx02f5: { date: formatDate(userData.createdAt) },
+      date_mkx0ahjp: { date: formatDate(userData.updatedAt) },
+   };
+
+   const variables = {
+      boardId: boardId,
+      itemName: userData.name,
+      columnValues: JSON.stringify(columnValues),
+   };
+
+   try {
+      const response = await fetch('https://api.monday.com/v2', {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json',
+            Authorization: mondayApiToken,
+            'API-Version': '2024-10',
+         },
+         body: JSON.stringify({ query, variables }),
+      });
+
+      const result = (await response.json()) as {
+         data?: any;
+         errors?: Array<{ message: string }>;
+      };
+
+      if (result.errors) {
+         console.error('Monday.com API error:', result.errors);
+      } else {
+         console.log('User added to Monday.com successfully:', result.data);
+      }
+
+      return result;
+   } catch (error) {
+      console.error('Failed to add user to Monday.com:', error);
+   }
+}
 
 export const authController = {
    async register(req: Request, res: Response) {
@@ -30,12 +104,27 @@ export const authController = {
             return res.status(400).json({ error: 'Name already taken' });
          }
 
-         const user = await User.create({ name, password, gender });
+         const user = await User.create({
+            name,
+            password,
+            gender: gender || 'boy',
+         });
+
+         // Add user to Monday.com board
+         addUserToMonday({
+            name: user.name,
+            role: user.role,
+            gender: user.gender,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+         }).catch((err) => {
+            console.error('Monday.com sync failed:', err);
+         });
 
          const token = jwt.sign(
             { userId: user._id, name: user.name },
             process.env.JWT_SECRET || 'secret',
-            { expiresIn: '1Yr' }
+            { expiresIn: '1y' }
          );
 
          res.status(201).json({
@@ -88,7 +177,7 @@ export const authController = {
 
    async updateBackground(req: Request, res: Response) {
       try {
-         const { userId } = req.body; // or from req.user if using auth middleware
+         const { userId } = req.body;
          const { background } = req.body;
 
          if (!userId || !background) {
@@ -100,7 +189,7 @@ export const authController = {
          const user = await User.findByIdAndUpdate(
             userId,
             { background },
-            { new: true } // return updated document
+            { new: true }
          );
 
          if (!user) {

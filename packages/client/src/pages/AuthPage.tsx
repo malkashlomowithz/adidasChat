@@ -6,7 +6,6 @@ import icon from '@/assets/bubble.png';
 interface AuthPageProps {
    setToken?: (token: string | null) => void;
    setUserId?: (userId: string | null) => void;
-   setBackgroundFrom;
 }
 
 export default function AuthPage({ setToken, setUserId }: AuthPageProps) {

@@ -31,7 +31,7 @@ const Sidebar: FC<SidebarProps> = ({
             Start A New Chat
          </button>
 
-         <div className="w-full p-2 bg-white rounded-md shadow mb-4 text-center font-semibold">
+         <div className="w-full p-2  rounded-md shadow mb-4 text-center font-semibold">
             {title || 'No conversation selected'}
          </div>
 
