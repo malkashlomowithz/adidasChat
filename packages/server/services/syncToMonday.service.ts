@@ -1,10 +1,12 @@
 import dotenv from 'dotenv';
 import { MongoClient, Db, Collection } from 'mongodb';
-import axios, { type AxiosResponse } from 'axios';
+import axios from 'axios';
 
 dotenv.config();
 
-// --- Types & Interfaces ---
+/* ------------------------------------ */
+/*              INTERFACES              */
+/* ------------------------------------ */
 interface ConversationMessage {
    sender: string;
    text: string;
@@ -21,7 +23,7 @@ interface MongoConversation {
 
 interface MondayColumnValue {
    id: string;
-   value: string;
+   value: string | null;
 }
 
 interface MondayItem {
@@ -30,52 +32,34 @@ interface MondayItem {
    column_values: MondayColumnValue[];
 }
 
-interface MondayBoardResponse {
-   data: {
-      boards: Array<{
-         items_page: {
-            items: MondayItem[];
-         };
-      }>;
-   };
-   errors?: Array<{ message: string }>;
-}
+/* ------------------------------------ */
+/*           ENV + CONFIG               */
+/* ------------------------------------ */
+const uri = process.env.MONGODB_URI || '';
+const dbName = 'test';
+const collectionName = 'conversations';
+const mondayKey = process.env.MONDAY_API_TOKEN;
+const boardId = '5067393276';
 
-interface MondayCreateResponse {
-   data: {
-      create_item: {
-         id: string;
-         name: string;
-      };
-   };
-   errors?: Array<{ message: string }>;
-}
+// Board column IDs from your structure
+const COLUMN_IDS = {
+   userId: 'text_mkx5d5rn',
+   mongoId: 'text_mkx5aneb',
+   conversationId: 'text_mkx5w9ez',
+   lastUpdated: 'date_mkx5t89q',
+   messages: 'text_mkx5jgs3',
+};
 
-interface ColumnValuesObject {
-   [key: string]: string | { date: string | null } | undefined;
-}
+if (!uri) throw new Error('❌ MONGODB_URI missing');
+if (!mondayKey) throw new Error('❌ MONDAY_API_TOKEN missing');
 
-// --- Load env variables ---
-const uri: string | undefined = process.env.MONGODB_URI;
-const dbName: string = 'test';
-const collectionName: string = 'conversations';
-const mondayKey: string | undefined = process.env.MONDAY_API_TOKEN;
-const boardId: string = '5067393276';
+console.log('🔧 Loaded configuration successfully');
 
-// Validation
-if (!uri) throw new Error('❌ MONGO_URI missing in .env');
-if (!mondayKey) throw new Error('❌ MONDAY_API_TOKEN missing in .env');
-if (!boardId) throw new Error('❌ BOARD_ID missing in .env');
-
-console.log('🔧 Configuration:');
-console.log(`   DB Name: ${dbName}`);
-console.log(`   Collection: ${collectionName}`);
-console.log(`   Board ID: ${boardId}`);
-console.log('');
-
-// --- 1️⃣ Get all data from MongoDB ---
+/* ------------------------------------ */
+/*        1️⃣ FETCH FROM MONGODB         */
+/* ------------------------------------ */
 async function getMongoData(): Promise<MongoConversation[]> {
-   const client = new MongoClient(uri as string);
+   const client = new MongoClient(uri);
    try {
       await client.connect();
       console.log('✅ Connected to MongoDB');
@@ -83,29 +67,23 @@ async function getMongoData(): Promise<MongoConversation[]> {
       const db: Db = client.db(dbName);
       const collection: Collection<MongoConversation> =
          db.collection(collectionName);
+      const data = await collection.find({}).toArray();
 
-      const data: MongoConversation[] = await collection.find({}).toArray();
-      console.log(`📦 Fetched ${data.length} items from "${collectionName}"`);
-      if (data.length > 0)
-         console.log('📄 Sample item:', JSON.stringify(data[0], null, 2));
-
+      console.log(`📦 Found ${data.length} conversations`);
       return data;
-   } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('❌ MongoDB Error:', errorMessage);
-      throw err;
    } finally {
       await client.close();
-      console.log('🔌 MongoDB connection closed\n');
    }
 }
 
-// --- 1.5️⃣ Get all items from Monday board ---
+/* ------------------------------------ */
+/*        2️⃣ FETCH MONDAY ITEMS         */
+/* ------------------------------------ */
 async function getMondayItems(): Promise<MondayItem[]> {
    const query = `
-    query ($boardId: ID!) {
-      boards(ids: [$boardId]) {
-        items_page {
+    query ($boardId: [ID!]) {
+      boards (ids: $boardId) {
+        items_page (limit: 500) {
           items {
             id
             name
@@ -119,163 +97,89 @@ async function getMondayItems(): Promise<MondayItem[]> {
     }
   `;
 
-   try {
-      const response: AxiosResponse<MondayBoardResponse> = await axios.post(
-         'https://api.monday.com/v2',
-         {
-            query,
-            variables: {
-               boardId: (boardId as string).toString(),
-            },
+   const res = await axios.post(
+      'https://api.monday.com/v2',
+      { query, variables: { boardId } },
+      {
+         headers: {
+            Authorization: mondayKey,
+            'Content-Type': 'application/json',
          },
-         {
-            headers: {
-               Authorization: mondayKey,
-               'Content-Type': 'application/json',
-            },
-         }
-      );
-
-      if (response.data.errors) {
-         console.error(
-            '❌ GraphQL Error fetching items:',
-            response.data.errors
-         );
-         return [];
       }
+   );
 
-      const items: MondayItem[] =
-         response.data.data.boards[0]?.items_page?.items || [];
-      console.log(`📋 Fetched ${items.length} items from Monday board\n`);
-
-      // Debug: Log all existing conversation IDs
-      console.log('📌 Existing conversation IDs on Monday:');
-      items.forEach((item, idx) => {
-         const convoIdColumn = item.column_values.find(
-            (cv) => cv.id === 'text_mkx4kdy9'
-         );
-         const rawValue = convoIdColumn?.value || 'N/A';
-         const convoId = convoIdColumn?.value
-            ? extractTextValue(convoIdColumn.value)
-            : 'N/A';
-         if (idx < 2) {
-            console.log(`   [DEBUG] Raw: ${JSON.stringify(rawValue)}`);
-            console.log(
-               `   [DEBUG] After extraction: ${JSON.stringify(convoId)}`
-            );
-            console.log(`   [DEBUG] Extracted length: ${convoId.length}`);
-         }
-         console.log(`   - Item: "${item.name}" | Convo ID: ${convoId}`);
-      });
-      console.log('');
-
-      return items;
-   } catch (err) {
-      const errorMessage =
-         err instanceof Error && err instanceof axios.AxiosError && err.response
-            ? err.response.data
-            : err instanceof Error
-              ? err.message
-              : String(err);
-      console.error('❌ Error fetching Monday items:', errorMessage);
+   if (res.data.errors) {
+      console.error('❌ Error fetching Monday items:', res.data.errors);
       return [];
    }
+
+   const items = res.data.data.boards[0]?.items_page?.items || [];
+   console.log(`📋 Loaded ${items.length} Monday items`);
+   return items;
 }
 
-// --- Helper: Extract text value from Monday column ---
+/* ------------------------------------ */
+/*        HELPERS                       */
+/* ------------------------------------ */
 function extractTextValue(value: string | null | undefined): string {
+   if (!value) return '';
+   let current = value.trim();
    try {
-      if (!value) return '';
-      let text: string | Record<string, unknown> = value;
-
-      // Parse outer {"text": "..."} if present
-      if (typeof value === 'string' && value.trim().startsWith('{')) {
-         const parsed = JSON.parse(value) as Record<string, unknown>;
-         if (parsed?.text) text = parsed.text as string;
+      while (current.startsWith('{') || current.startsWith('"')) {
+         const parsed = JSON.parse(current);
+         if (typeof parsed === 'string') current = parsed;
+         else if (parsed?.text) current = parsed.text;
+         else break;
       }
-
-      // Remove escaped quotes until clean
-      while (typeof text === 'string' && /^".*"$/.test(text.trim())) {
-         text = text.trim();
-         text = text.slice(1, -1);
-      }
-
-      return String(text).trim();
-   } catch (e) {
-      return String(value).trim();
+   } catch {
+      return value;
    }
+   return current.trim();
 }
 
-// --- 1.75️⃣ Check if conversation ID exists in Monday board ---
-function conversationExistsOnMonday(
-   convoId: string | undefined,
+function formatDate(dateInput?: string | Date): string {
+   if (!dateInput) return '';
+   const d = new Date(dateInput);
+   if (isNaN(d.getTime())) return '';
+   return d.toISOString().split('T')[0] || '';
+}
+
+function findConversationOnMonday(
+   convoId: string,
    mondayItems: MondayItem[]
-): boolean {
-   if (!convoId) return false;
-
-   const cleanConvoId: string = String(convoId).trim();
-
-   const found = mondayItems.find((item) => {
-      const convoIdColumn = item.column_values.find(
-         (cv) => cv.id === 'text_mkx4kdy9'
-      );
-      if (!convoIdColumn) return false;
-
-      const columnValue: string = extractTextValue(convoIdColumn.value);
-      const matches: boolean = columnValue === cleanConvoId;
-
-      // Debug: show first few comparisons
-      if (mondayItems.indexOf(item) < 3 && cleanConvoId.includes('792d505f')) {
-         console.log(
-            `   [DEBUG] Comparing: "${columnValue}" (len: ${columnValue.length}) === "${cleanConvoId}" (len: ${cleanConvoId.length})`
+): MondayItem | null {
+   const cleanId = String(convoId).trim();
+   return (
+      mondayItems.find((item) => {
+         const field = item.column_values.find(
+            (cv) => cv.id === COLUMN_IDS.conversationId
          );
-      }
-
-      return matches;
-   });
-
-   return !!found;
+         return extractTextValue(field?.value) === cleanId;
+      }) || null
+   );
 }
 
-// --- 2️⃣ Send a single conversation to Monday ---
-async function sendToMonday(
-   convo: MongoConversation
-): Promise<string | boolean> {
-   const itemName: string = convo.title || 'Untitled Conversation';
-   console.log(`\n📤 Creating: "${itemName}"`);
+/* ------------------------------------ */
+/*        3️⃣ CREATE ON MONDAY           */
+/* ------------------------------------ */
+async function createOnMonday(convo: MongoConversation): Promise<boolean> {
+   const messages = (convo.messages || [])
+      .map((m, i) => `${i + 1}. [${m.sender}] ${m.text}`)
+      .join('\n');
 
-   // Convert messages array to readable string
-   const messagesText: string = Array.isArray(convo.messages)
-      ? convo.messages
-           .map((msg, i) => `${i + 1}. [${msg.sender}] ${msg.text}`)
-           .join('\n')
-      : '';
-
-   // Prepare column values based on your board columns
-   const columnValuesObj: ColumnValuesObject = {
-      text_mkx45rgd: convo._id || '',
-      text_mkx4kdy9: convo.conversationId || '',
-      date_mkx4tec8: convo.lastUpdate
+   const columnValues = {
+      [COLUMN_IDS.mongoId]: convo._id,
+      [COLUMN_IDS.conversationId]: convo.conversationId,
+      [COLUMN_IDS.userId]: convo.userId,
+      [COLUMN_IDS.lastUpdated]: convo.lastUpdate
          ? { date: formatDate(convo.lastUpdate) }
-         : undefined,
-      text_mkx4e9tg: convo.userId || '',
-      long_text_mkx4fy02: messagesText || '',
+         : { date: null },
+      [COLUMN_IDS.messages]: messages,
    };
-
-   // Clean undefined values
-   Object.keys(columnValuesObj).forEach((key) => {
-      if (columnValuesObj[key] === undefined) delete columnValuesObj[key];
-   });
-
-   const columnValues: string = JSON.stringify(columnValuesObj);
 
    const mutation = `
     mutation ($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
-      create_item(
-        board_id: $boardId,
-        item_name: $itemName,
-        column_values: $columnValues
-      ) {
+      create_item (board_id: $boardId, item_name: $itemName, column_values: $columnValues) {
         id
         name
       }
@@ -283,14 +187,14 @@ async function sendToMonday(
   `;
 
    try {
-      const response: AxiosResponse<MondayCreateResponse> = await axios.post(
+      const res = await axios.post(
          'https://api.monday.com/v2',
          {
             query: mutation,
             variables: {
-               boardId: (boardId as string).toString(),
-               itemName,
-               columnValues,
+               boardId,
+               itemName: convo.title || 'Untitled',
+               columnValues: JSON.stringify(columnValues),
             },
          },
          {
@@ -301,89 +205,142 @@ async function sendToMonday(
          }
       );
 
-      if (response.data.errors) {
-         console.error(
-            `❌ GraphQL Error for "${itemName}":`,
-            response.data.errors
-         );
+      if (res.data.errors) {
+         console.error('❌ Error creating item:', res.data.errors);
          return false;
       }
 
-      const itemId: string = response.data.data.create_item.id;
-      console.log(`✅ Created "${itemName}" (Item ID: ${itemId})`);
-      return itemId;
-   } catch (err) {
-      const errorMessage =
-         err instanceof Error && err instanceof axios.AxiosError && err.response
-            ? err.response.data
-            : err instanceof Error
-              ? err.message
-              : String(err);
-      console.error(`❌ Error creating "${itemName}":`, errorMessage);
+      console.log(`✅ Created item for conversation ${convo.conversationId}`);
+      return true;
+   } catch (err: any) {
+      console.error(
+         '❌ Error creating on Monday:',
+         err.response?.data || err.message
+      );
       return false;
    }
 }
 
-// --- Helper: Format date for Monday.com ---
-function formatDate(dateInput: Date | string | undefined): string | null {
-   try {
-      if (!dateInput) return null;
-      const date = new Date(dateInput);
-      if (isNaN(date.getTime())) return null;
-      return date.toISOString().split('T')[0] || Date(); // YYYY-MM-DD
-   } catch {
-      return null;
+/* ------------------------------------ */
+/*        4️⃣ UPDATE ON MONDAY           */
+/* ------------------------------------ */
+async function updateOnMonday(
+   itemId: string,
+   convo: MongoConversation
+): Promise<boolean> {
+   const updates = [
+      { id: COLUMN_IDS.mongoId, value: convo._id },
+      { id: COLUMN_IDS.conversationId, value: convo.conversationId },
+      { id: COLUMN_IDS.userId, value: convo.userId },
+      {
+         id: COLUMN_IDS.lastUpdated,
+         value: { date: formatDate(convo.lastUpdate) },
+      },
+      {
+         id: COLUMN_IDS.messages,
+         value: (convo.messages || [])
+            .map((m, i) => `${i + 1}. [${m.sender}] ${m.text}`)
+            .join('\n'),
+      },
+   ];
+
+   for (const upd of updates) {
+      const mutation = `
+      mutation ($boardId: ID!, $itemId: ID!, $columnId: String!, $value: JSON!) {
+        change_column_value (board_id: $boardId, item_id: $itemId, column_id: $columnId, value: $value) {
+          id
+        }
+      }
+    `;
+
+      try {
+         await axios.post(
+            'https://api.monday.com/v2',
+            {
+               query: mutation,
+               variables: {
+                  boardId,
+                  itemId,
+                  columnId: upd.id,
+                  value: JSON.stringify(upd.value),
+               },
+            },
+            {
+               headers: {
+                  Authorization: mondayKey,
+                  'Content-Type': 'application/json',
+               },
+            }
+         );
+      } catch (err: any) {
+         console.error(
+            `❌ Failed to update ${upd.id}:`,
+            err.response?.data || err.message
+         );
+         return false;
+      }
    }
+
+   console.log(`🔄 Updated item ${itemId} successfully`);
+   return true;
 }
 
-// --- 3️⃣ Main Sync ---
+/* ------------------------------------ */
+/*        5️⃣ MAIN SYNC FUNCTION         */
+/* ------------------------------------ */
 export async function syncMongoToMonday(): Promise<void> {
-   console.log('🚀 Starting sync...\n');
+   console.log('🚀 Starting sync...');
+   const mongoData = await getMongoData();
+   const mondayItems = await getMondayItems();
 
-   try {
-      const data: MongoConversation[] = await getMongoData();
-      if (data.length === 0) {
-         console.log('⚠️ No data to sync. Exiting.');
-         return;
+   let created = 0,
+      updated = 0,
+      skipped = 0;
+
+   for (const convo of mongoData) {
+      const existing = findConversationOnMonday(
+         convo.conversationId,
+         mondayItems
+      );
+      if (!existing) {
+         const ok = await createOnMonday(convo);
+         if (ok) created++;
+         continue;
       }
 
-      console.log(''); // spacing
-      const mondayItems: MondayItem[] = await getMondayItems();
-      console.log(''); // spacing
+      const mondayDate = extractTextValue(
+         existing.column_values.find((cv) => cv.id === COLUMN_IDS.lastUpdated)
+            ?.value
+      );
+      const mongoDate = formatDate(convo.lastUpdate);
 
-      let success: number = 0;
-      let fail: number = 0;
-      let skipped: number = 0;
-
-      for (const convo of data) {
+      if (mondayDate === mongoDate) {
          console.log(
-            `\n🔍 Checking: "${convo.title || 'Untitled Conversation'}" (ID: ${convo.conversationId})`
+            `⏭ Skipping ${convo.conversationId} — already up to date`
          );
-
-         // Check if conversation already exists on Monday
-         if (conversationExistsOnMonday(convo.conversationId, mondayItems)) {
-            console.log(`⏭️  Skipped - already exists`);
-            skipped++;
-         } else {
-            console.log(`   → Not found on Monday, creating...`);
-            const result = await sendToMonday(convo);
-            if (result) success++;
-            else fail++;
-         }
-
-         await new Promise((res) => setTimeout(res, 500)); // prevent rate limits
+         skipped++;
+      } else {
+         const ok = await updateOnMonday(existing.id, convo);
+         if (ok) updated++;
       }
 
-      console.log('\n' + '='.repeat(50));
-      console.log(`🎉 Sync complete!`);
-      console.log(`✅ Created: ${success}`);
-      console.log(`❌ Failed: ${fail}`);
-      console.log(`⏭️  Skipped: ${skipped}`);
-      console.log(`📊 Total: ${data.length}`);
-      console.log('='.repeat(50));
-   } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('❌ Sync failed:', errorMessage);
-      process.exit(1);
+      await new Promise((res) => setTimeout(res, 400)); // avoid rate limits
    }
+
+   console.log(`
+=============================
+🎯 Sync complete!
+✅ Created: ${created}
+🔄 Updated: ${updated}
+⏭ Skipped: ${skipped}
+📊 Total: ${mongoData.length}
+=============================
+`);
+}
+
+/* ------------------------------------ */
+/*          RUN IF CALLED DIRECTLY      */
+/* ------------------------------------ */
+if (require.main === module) {
+   syncMongoToMonday();
 }

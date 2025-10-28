@@ -18,6 +18,7 @@ async function addUserToMonday(userData: {
    role: string;
    createdAt: Date;
    updatedAt: Date;
+   userId: string;
 }) {
    const mondayApiToken =
       'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU3NTY3MjE3OSwiYWFpIjoxMSwidWlkIjo5Mjc2NjUyMCwiaWFkIjoiMjAyNS0xMC0xOVQwNTo1OToyMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6Mjk1ODExNDQsInJnbiI6ImV1YzEifQ.pbG6HUA_nTlED_iNnCWUOeMRlYq8L8hh3RupvGS9KBk';
@@ -25,7 +26,6 @@ async function addUserToMonday(userData: {
 
    if (!mondayApiToken || !boardId) {
       console.error('Monday.com credentials not configured');
-      console.error(mondayApiToken, boardId);
       return;
    }
 
@@ -46,9 +46,9 @@ async function addUserToMonday(userData: {
    };
 
    const columnValues = {
-      color_mkx0342a: { label: userData.role },
-      date_mkx02f5: { date: formatDate(userData.createdAt) },
-      date_mkx0ahjp: { date: formatDate(userData.updatedAt) },
+      color_mkx5ygeq: { label: userData.role },
+      date4: { date: formatDate(userData.createdAt) },
+      date_mkx54b3q: { date: formatDate(userData.updatedAt) },
    };
 
    const variables = {
@@ -111,6 +111,7 @@ export const authController = {
             role: user.role,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            userId: '',
          }).catch((err) => {
             console.error('Monday.com sync failed:', err);
          });
