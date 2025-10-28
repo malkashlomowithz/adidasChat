@@ -165,6 +165,7 @@ export async function loadAllConversations(
       }));
 
       setConversations(mapped);
+      console.log('can sync nowwwwwwwww');
    } catch (error) {
       console.error('Error loading conversations:', error);
       setConversations([]); // clear or keep previous depending on your preference

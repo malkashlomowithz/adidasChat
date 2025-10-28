@@ -52,7 +52,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
 
             <p className="mt-3 text-s text-gray-500 text-center">
                This chat has been developed for Adidas. All answers provided are
-               based on Adidas’ internal product data and resources.{' '}
+               based on Adidas’ internal resources.{' '}
             </p>
          </div>
       );

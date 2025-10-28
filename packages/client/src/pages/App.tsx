@@ -132,12 +132,6 @@ function App({ setToken, userId }: AppProps) {
          </div>
 
          {/* Footer */}
-         <div className="fixed bottom-1 right-4 text-xs text-gray-500 z-50">
-            <samp>
-               © Built with love for curious kids everywhere, by Malky
-               Shlomowitz.
-            </samp>
-         </div>
       </div>
    );
 }

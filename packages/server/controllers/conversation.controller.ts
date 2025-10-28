@@ -3,6 +3,7 @@ import { Conversation } from '../models/conversation';
 import { v4 as uuidv4 } from 'uuid';
 import z from 'zod';
 import mondaySDK from 'monday-sdk-js';
+import { syncMongoToMonday } from '../services/syncToMonday.service';
 
 // Initialize Monday SDK
 const monday = mondaySDK();
@@ -180,6 +181,8 @@ export const conversationController = {
             .sort({ lastUpdate: -1 });
 
          res.json(conversations);
+         console.log('_______Syncing Mongo To Monday_______');
+         await syncMongoToMonday();
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to fetch conversations' });

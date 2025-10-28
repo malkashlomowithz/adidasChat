@@ -28,6 +28,7 @@ const MONDAY_COLUMNS = {
    ITEMS_SOLD: 'numeric_mkx4n3rg',
    CREATED_AT: 'date_mkx4a3hh',
    UPDATED_AT: 'date_mkx42qfz',
+   DISCOUNT_PRICE: 'numeric_mkx5jz97',
 };
 
 // Function to check if the query is about products/catalog
@@ -61,6 +62,10 @@ function isProductRelatedQuery(prompt: string): boolean {
       'clothing',
       'apparel',
       'accessories',
+      'first step',
+      'item',
+      'product',
+      'items',
       // Common actions/intents
       'search',
       'find',
@@ -82,6 +87,8 @@ function isProductRelatedQuery(prompt: string): boolean {
       'where can i',
       'can i find',
       'how much',
+      'info',
+      'infomation',
       // Categories
       'women',
       'men',
@@ -104,6 +111,7 @@ function isProductRelatedQuery(prompt: string): boolean {
       'primeknit',
       'size',
       'color',
+      'first step',
       // Adidas brand & lines
       'adidas',
       'ultraboost',
@@ -209,6 +217,7 @@ interface Product {
    name: string;
    description: string;
    price: string;
+   discountPrice: string;
    sku: string;
    category: string;
    stock: string;
@@ -341,6 +350,7 @@ async function fetchProductsFromMonday(): Promise<Product[]> {
             name: item.name,
             description: description,
             price: getColumnValue(item, MONDAY_COLUMNS.PRICE),
+            discountPrice: getColumnValue(item, MONDAY_COLUMNS.DISCOUNT_PRICE),
             sku: getColumnValue(item, MONDAY_COLUMNS.SKU),
             category: getColumnValue(item, MONDAY_COLUMNS.CATEGORY),
             stock: getColumnValue(item, MONDAY_COLUMNS.STOCK),
@@ -384,6 +394,7 @@ function formatProductsForAI(products: Product[]): string {
             `Product Name: ${p.name}`,
             p.category ? `Category: ${p.category}` : null,
             p.price ? `Price: $${p.price}` : null,
+            p.discountPrice ? `Discount Price: $${p.discountPrice}` : null,
             p.sku ? `SKU: ${p.sku}` : null,
             p.stock ? `Stock: ${p.stock} units` : null,
             p.itemsSold ? `Items Sold: ${p.itemsSold}` : null,
@@ -522,8 +533,9 @@ Guidelines:
 - Keep responses under 150 words
 - Focus on relevant products from the catalog above
 - Mention prices and availability as shown in the catalog
-- If multiple products match, show the top 3-4 options
+- Include discount prices when available - highlight savings compared to regular price
 - Format prices with $ symbol
+- If multiple products match, show the top 3-4 options
 - When listing products, be concise but informative
 - Only recommend products that exist in the catalog above
 - If stock is low (less than 10), mention limited availability`,
