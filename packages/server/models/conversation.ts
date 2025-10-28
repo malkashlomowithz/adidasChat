@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { string } from 'zod';
 
 export type Message = {
    sender: 'user' | 'bot';
@@ -27,11 +26,26 @@ const MessageSchema = new Schema<Message>(
 );
 
 const ConversationSchema = new Schema<ConversationDocument>({
-   conversationId: { type: String, required: true, unique: true },
-   title: { type: String },
-   messages: [MessageSchema],
+   conversationId: { type: String, required: true, unique: true, index: true },
+   title: { type: String, default: '' },
+   messages: { type: [MessageSchema], default: [] },
    lastUpdate: { type: Date, default: Date.now },
-   userId: { type: String, required: true, unique: true },
+   userId: { type: String, required: true, index: true },
+});
+
+// Compound index for efficient user conversation queries
+ConversationSchema.index({ userId: 1, lastUpdate: -1 });
+
+// Middleware to update lastUpdate on save
+ConversationSchema.pre('save', function (next) {
+   this.lastUpdate = new Date();
+   next();
+});
+
+// Middleware to update lastUpdate on findOneAndUpdate
+ConversationSchema.pre('findOneAndUpdate', function (next) {
+   this.set({ lastUpdate: new Date() });
+   next();
 });
 
 export const Conversation = mongoose.model<ConversationDocument>(

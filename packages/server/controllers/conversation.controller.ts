@@ -2,9 +2,25 @@ import type { Request, Response } from 'express';
 import { Conversation } from '../models/conversation';
 import { v4 as uuidv4 } from 'uuid';
 import z from 'zod';
+import mondaySDK from 'monday-sdk-js';
+
+// Initialize Monday SDK
+const monday = mondaySDK();
+monday.setToken(process.env.MONDAY_API_TOKEN!);
+
+// Your Monday.com board ID
+const MONDAY_BOARD_ID = process.env.MONDAY_BOARD_ID!;
+
+// Column IDs from your Monday board
+const MONDAY_COLUMNS = {
+   conversationId: 'text_mkx4kdy9',
+   lastUpdated: 'date_mkx4tec8',
+   messages: 'long_text_mkx4fy02',
+   userId: 'text_mkx4e9tg',
+   _id: 'text_mkx45rgd',
+};
 
 // Schemas
-
 const saveMessagesSchema = z.object({
    conversationId: z.string(),
    messages: z.array(
@@ -40,6 +56,82 @@ const getConversationByIdSchema = z.object({
    id: z.string(),
 });
 
+// Helper function to create/update Monday item
+async function upsertMondayItem(conversation: any) {
+   try {
+      const messagesJson = JSON.stringify(conversation.messages);
+      const lastUpdated = new Date(conversation.lastUpdate)
+         .toISOString()
+         .split('T')[0];
+
+      // Search for existing item by conversationId
+      const searchQuery = `query {
+         items_page_by_column_values (
+            board_id: ${MONDAY_BOARD_ID},
+            columns: [{column_id: "${MONDAY_COLUMNS.conversationId}", column_values: ["${conversation.conversationId}"]}]
+         ) {
+            items {
+               id
+            }
+         }
+      }`;
+
+      const searchResponse = await monday.api(searchQuery);
+      const existingItems =
+         searchResponse.data?.items_page_by_column_values?.items || [];
+
+      if (existingItems.length > 0) {
+         // Update existing item
+         const itemId = existingItems[0].id;
+         const updateQuery = `mutation {
+            change_multiple_column_values(
+               item_id: ${itemId},
+               board_id: ${MONDAY_BOARD_ID},
+               column_values: ${JSON.stringify(
+                  JSON.stringify({
+                     [MONDAY_COLUMNS.lastUpdated]: { date: lastUpdated },
+                     [MONDAY_COLUMNS.messages]: messagesJson,
+                     [MONDAY_COLUMNS.userId]: conversation.userId || '',
+                     [MONDAY_COLUMNS._id]: conversation._id.toString(),
+                  })
+               )}
+            ) {
+               id
+            }
+         }`;
+         await monday.api(updateQuery);
+         console.log(`Updated Monday item ${itemId}`);
+      } else {
+         // Create new item
+         const createQuery = `mutation {
+            create_item(
+               board_id: ${MONDAY_BOARD_ID},
+               item_name: ${JSON.stringify(conversation.title)},
+               column_values: ${JSON.stringify(
+                  JSON.stringify({
+                     [MONDAY_COLUMNS.conversationId]:
+                        conversation.conversationId,
+                     [MONDAY_COLUMNS.lastUpdated]: { date: lastUpdated },
+                     [MONDAY_COLUMNS.messages]: messagesJson,
+                     [MONDAY_COLUMNS.userId]: conversation.userId || '',
+                     [MONDAY_COLUMNS._id]: conversation._id.toString(),
+                  })
+               )}
+            ) {
+               id
+            }
+         }`;
+         await monday.api(createQuery);
+         console.log(
+            `Created new Monday item for conversation ${conversation.conversationId}`
+         );
+      }
+   } catch (error) {
+      console.error('Error syncing to Monday:', error);
+      throw error;
+   }
+}
+
 export const conversationController = {
    async saveMessages(req: Request, res: Response) {
       console.log('conversation----!!!!!!!!---');
@@ -66,39 +158,19 @@ export const conversationController = {
             return res.status(404).json({ error: 'Conversation not found' });
          }
 
+         // Sync to Monday.com
+         await upsertMondayItem(updatedConvo);
+
          res.json(updatedConvo);
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to save messages' });
       }
    },
-   //    async createConversation(req: Request, res: Response) {
-   //       const parseResult = createConversationSchema.safeParse(req.body);
-   //       if (!parseResult.success) {
-   //          return res.status(400).json(parseResult.error.format());
-   //       }
-
-   //       try {
-   //          const conversationId = uuidv4();
-   //          const { title } = parseResult.data;
-   // console.log('conversation-------')
-   //          const conversation = await Conversation.create({
-   //             conversationId,
-   //             title: title ?? 'No Title',
-   //             messages: [],
-   //             lastUpdate: Date.now,
-   //          });
-   //         console.log('conversation-------', conversation)
-   //          res.json(conversation);
-   //       } catch (err) {
-   //          console.error(err);
-   //          res.status(500).json({ error: 'Failed to create conversation' });
-   //       }
-   //    },
 
    async getAllConversations(req: Request, res: Response) {
       try {
-         const { userId } = req.query; // ✅ read from query string
+         const { userId } = req.query;
 
          const filter: any = {};
          if (userId) filter.userId = userId;
@@ -136,9 +208,8 @@ export const conversationController = {
    },
 
    async updateConversationById(req: Request, res: Response) {
-      // Validate input
       const parseResult = updateConversationTitleSchema.safeParse({
-         conversationId: req.body.conversationId, // match schema
+         conversationId: req.body.conversationId,
          title: req.body.title,
       });
 
@@ -149,16 +220,20 @@ export const conversationController = {
       const { conversationId, title } = parseResult.data;
 
       try {
-         // Find by conversationId and update
-
          const updatedConvo = await Conversation.findOneAndUpdate(
-            { conversationId }, // find by conversationId
-            { $set: { title } }, // update the title
-            { new: true } // return updated document
+            { conversationId },
+            { $set: { title } },
+            { new: true }
          );
+
          if (!updatedConvo) {
             return res.status(404).json({ error: 'Conversation not found' });
          }
+
+         // Sync title update to Monday.com
+         await upsertMondayItem(updatedConvo);
+
+         res.json(updatedConvo);
       } catch (err) {
          console.error(err);
          res.status(500).json({ error: 'Failed to update conversation' });
@@ -166,7 +241,6 @@ export const conversationController = {
    },
 
    getMessagesByConversationId: async (req: Request, res: Response) => {
-      // 1. Validate route params with Zod
       const parseResult = getConversationByIdSchema.safeParse(req.params);
       if (!parseResult.success) {
          return res.status(400).json(parseResult.error.format());
@@ -175,7 +249,6 @@ export const conversationController = {
       try {
          const { id } = parseResult.data;
 
-         // 2. Find conversation by conversationId (UUID string)
          const conversation = await Conversation.findOne({
             conversationId: id,
          });
@@ -184,7 +257,6 @@ export const conversationController = {
             return res.status(404).json({ error: 'Conversation not found' });
          }
 
-         // 3. Return messages
          console.log('conversation------------------');
          res.json(conversation.messages || []);
       } catch (err) {

@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { chatService } from '../services/chat.service';
+import { productChatService } from '../services/chat.service';
 import z from 'zod';
 
 // Implementation detail
@@ -28,7 +28,7 @@ export const chatController = {
       try {
          console.log('log----', parseResult);
          const { prompt, conversationId, userId } = req.body;
-         const response = await chatService.sendMessage(
+         const response = await productChatService.sendMessage(
             prompt,
             conversationId,
             userId
@@ -50,7 +50,8 @@ export const chatController = {
       try {
          const { conversationId } = req.body;
          console.log('Created :', conversationId);
-         const title = await chatService.generateTitleWithId(conversationId);
+         const title =
+            await productChatService.generateTitleWithId(conversationId);
          res.json({ title });
       } catch (error) {
          console.error(error);

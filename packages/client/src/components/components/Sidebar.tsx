@@ -1,6 +1,5 @@
 import type { FC } from 'react';
-//import { Button } from '../ui/button';
-import plus from '@/assets/plus red.jpg';
+import plus from '@/assets/plus.jpg';
 
 interface SidebarProps {
    title: string;

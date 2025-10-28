@@ -1,32 +1,31 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
 import jwt from 'jsonwebtoken';
-import { User, type Gender } from '../models/auth';
+import { User } from '../models/auth';
 
 const registerSchema = z.object({
    name: z.string().min(1, 'Name is required'),
    password: z.string().min(1, 'Password is required'),
-   gender: z.enum(['boy', 'girl']).optional(),
 });
 
 const loginSchema = z.object({
    name: z.string().min(2, 'Name is required'),
    password: z.string().min(6, 'Password is required'),
-   gender: z.enum(['boy', 'girl']).or(z.literal('')).optional(),
 });
 
 async function addUserToMonday(userData: {
    name: string;
    role: string;
-   gender: Gender;
    createdAt: Date;
    updatedAt: Date;
 }) {
-   const mondayApiToken = process.env.MONDAY_API_TOKEN;
-   const boardId = process.env.MONDAY_BOARD_ID;
+   const mondayApiToken =
+      'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU3NzA4NDY1NiwiYWFpIjoxMSwidWlkIjo5NDE0MjE1OSwiaWFkIjoiMjAyNS0xMC0yMlQxMDozMzo0OC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzIxMDk1MjcsInJnbiI6ImV1YzEifQ.JD1o7eTpH5bsxmnikxp4bDP0Girn9P48NWnGNaN_148';
+   const boardId = process.env.MONDAY_BOARD_ID_USERS;
 
    if (!mondayApiToken || !boardId) {
       console.error('Monday.com credentials not configured');
+      console.error(mondayApiToken, boardId);
       return;
    }
 
@@ -42,15 +41,12 @@ async function addUserToMonday(userData: {
       }
    `;
 
-   // Format dates as YYYY-MM-DD for Monday.com
    const formatDate = (date: Date) => {
       return date.toISOString().split('T')[0];
    };
 
-   // Prepare column values - using lowercase labels to match Monday.com
    const columnValues = {
-      color_mkx0342a: { label: userData.role }, // "admin" or "user" (lowercase)
-      color_mkx0aq52: { label: userData.gender }, // "boy" or "girl" (lowercase)
+      color_mkx0342a: { label: userData.role },
       date_mkx02f5: { date: formatDate(userData.createdAt) },
       date_mkx0ahjp: { date: formatDate(userData.updatedAt) },
    };
@@ -97,7 +93,7 @@ export const authController = {
       }
 
       try {
-         const { name, password, gender } = parseResult.data;
+         const { name, password } = parseResult.data;
 
          const existingUser = await User.findOne({ name });
          if (existingUser) {
@@ -107,14 +103,12 @@ export const authController = {
          const user = await User.create({
             name,
             password,
-            gender: gender || 'boy',
          });
 
          // Add user to Monday.com board
          addUserToMonday({
             name: user.name,
             role: user.role,
-            gender: user.gender,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
          }).catch((err) => {
@@ -166,7 +160,6 @@ export const authController = {
          res.json({
             token,
             userId: user._id,
-            gender: user.gender,
             background: user.background || null,
          });
       } catch (err) {
@@ -201,7 +194,6 @@ export const authController = {
             user: {
                _id: user._id,
                name: user.name,
-               gender: user.gender,
                background: user.background,
             },
          });

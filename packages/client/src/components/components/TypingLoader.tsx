@@ -1,17 +1,6 @@
 import React from 'react';
 
-const typingSentences = [
-   '🤖 Thinking of a magical answer...',
-   '✨ The bot is cooking up a reply...',
-   '🧚‍♂️ Little ideas are forming...',
-   '💬 Shh… the bot is whispering...',
-   '🌟 The magic is happening...',
-   '🤗 Preparing a fun reply...',
-   '📝 Just a moment…',
-   '⌛ Thinking…',
-   '💭 Let me see…',
-   '🕵️‍♂️ Searching for an answer…',
-];
+const typingSentences = ['🤖 Thinking of a answer'];
 
 const TypingLoader: React.FC = () => {
    const sentence =
