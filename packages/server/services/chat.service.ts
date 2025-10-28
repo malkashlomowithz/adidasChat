@@ -272,7 +272,7 @@ async function fetchProductsFromMonday(): Promise<Product[]> {
    }
 
    const mondayApiKey = process.env.MONDAY_API_KEY;
-   const boardId = process.env.MONDAY_BOARD_ID_CATALOG || '5056913322';
+   const boardId = process.env.MONDAY_BOARD_ID_CATALOG || '5067290051';
 
    if (!mondayApiKey) {
       console.error('❌ MONDAY_API_KEY is not set in environment variables');

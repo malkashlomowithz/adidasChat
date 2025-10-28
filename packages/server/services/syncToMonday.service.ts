@@ -60,7 +60,7 @@ const uri: string | undefined = process.env.MONGODB_URI;
 const dbName: string = 'test';
 const collectionName: string = 'conversations';
 const mondayKey: string | undefined = process.env.MONDAY_API_TOKEN;
-const boardId: string = '5064428801';
+const boardId: string = '5067393276';
 
 // Validation
 if (!uri) throw new Error('❌ MONGO_URI missing in .env');

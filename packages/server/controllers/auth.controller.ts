@@ -20,8 +20,8 @@ async function addUserToMonday(userData: {
    updatedAt: Date;
 }) {
    const mondayApiToken =
-      'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU3NzA4NDY1NiwiYWFpIjoxMSwidWlkIjo5NDE0MjE1OSwiaWFkIjoiMjAyNS0xMC0yMlQxMDozMzo0OC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MzIxMDk1MjcsInJnbiI6ImV1YzEifQ.JD1o7eTpH5bsxmnikxp4bDP0Girn9P48NWnGNaN_148';
-   const boardId = '5056920933';
+      'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU3NTY3MjE3OSwiYWFpIjoxMSwidWlkIjo5Mjc2NjUyMCwiaWFkIjoiMjAyNS0xMC0xOVQwNTo1OToyMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6Mjk1ODExNDQsInJnbiI6ImV1YzEifQ.pbG6HUA_nTlED_iNnCWUOeMRlYq8L8hh3RupvGS9KBk';
+   const boardId = '5067388078';
 
    if (!mondayApiToken || !boardId) {
       console.error('Monday.com credentials not configured');
